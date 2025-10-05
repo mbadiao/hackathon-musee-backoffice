@@ -1,0 +1,11 @@
+---
+alwaysApply: false
+---
+- make the ui as profetional, beautiful and userfriendly without getting out of context of the theme of the app you building  as possible as possible 
+- do not create any .md , .txt and .sh after finishing your task
+- do not delete any file directely 
+- do not lodify any design unless i told you to do it
+- if i have error read all files tha potentialy produce the error before starting to fix it
+- before editing any page scan this page and check if this is the right file to edit and check imports or if you don't breack anything while editing
+- if you make important change make a structure todo in order to not have regrestion
+- just modify the fewer pages at possible and check if it don't break anything

@@ -1,0 +1,280 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-size: 16px;
+  
+  /* Couleurs de base - palette claire et aérée */
+  --background: #fafbfc;
+  --foreground: #1e293b;
+  
+  /* Cartes et surfaces avec ombres douces */
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  --card-hover: #f8fafc;
+  
+  /* Popovers */
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  
+  /* Couleur principale - marron chocolat élégant */
+  --primary: #D2691E;
+  --primary-foreground: #ffffff;
+  --primary-hover: #B85814;
+  --primary-light: #F4A460;
+  
+  /* Secondaire - tons neutres modernes */
+  --secondary: #f1f5f9;
+  --secondary-foreground: #475569;
+  
+  /* Muted */
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  
+  /* Accent - bleu électrique des images */
+  --accent: #0066FF;
+  --accent-foreground: #ffffff;
+  --accent-hover: #0052CC;
+  --accent-light: #E6F0FF;
+  
+  /* Success, warning, error */
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --success-light: #d1fae5;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --warning-light: #fef3c7;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --destructive-light: #fee2e2;
+  
+  /* Borders et inputs */
+  --border: #e2e8f0;
+  --input: transparent;
+  --input-background: #ffffff;
+  --input-border: #cbd5e1;
+  --switch-background: #e2e8f0;
+  --ring: #D2691E;
+  
+  /* Sidebar - design moderne et épuré avec marron subtil */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #334155;
+  --sidebar-primary: #D2691E;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f8fafc;
+  --sidebar-accent-foreground: #1e293b;
+  --sidebar-border: #f1f5f9;
+  --sidebar-ring: #D2691E;
+  --sidebar-hover: #fef8f3;
+  --sidebar-active: #fef3e9;
+  
+  /* Charts colors - palette harmonieuse */
+  --chart-1: #D2691E;
+  --chart-2: #0066FF;
+  --chart-3: #10b981;
+  --chart-4: #f59e0b;
+  --chart-5: #8b5cf6;
+  
+  /* Typography */
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-normal: 400;
+  
+  /* Radius moderne */
+  --radius: 0.875rem;
+  --radius-sm: 0.5rem;
+  --radius-lg: 1.25rem;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  --background: #1a1a1a;
+  --foreground: #ffffff;
+  --card: #2d2d2d;
+  --card-foreground: #ffffff;
+  --popover: #2d2d2d;
+  --popover-foreground: #ffffff;
+  --primary: #E07A5F;
+  --primary-foreground: #ffffff;
+  --secondary: #343a40;
+  --secondary-foreground: #adb5bd;
+  --muted: #343a40;
+  --muted-foreground: #adb5bd;
+  --accent: #F2CC8F;
+  --accent-foreground: #1a1a1a;
+  --destructive: #dc3545;
+  --destructive-foreground: #ffffff;
+  --border: #495057;
+  --input: #2d2d2d;
+  --ring: #E07A5F;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #E07A5F;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2d2d2d;
+  --sidebar-accent-foreground: #adb5bd;
+  --sidebar-border: #495057;
+  --sidebar-ring: #E07A5F;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+html {
+  font-size: var(--font-size);
+  scroll-behavior: smooth;
+}
+
+/* Animations fluides et modernes */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  .animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-out;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+  }
+  
+  .smooth-transition {
+    @apply transition-all duration-200 ease-in-out;
+  }
+  
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent;
+  }
+  
+  .shadow-primary {
+    box-shadow: 0 4px 14px 0 rgba(210, 105, 30, 0.15);
+  }
+  
+  .shadow-accent {
+    box-shadow: 0 4px 14px 0 rgba(0, 102, 255, 0.15);
+  }
+}
+
+/* Scrollbar personnalisé */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 100vh;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 100vh;
+  border: 2px solid var(--muted);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Selection personnalisée */
+::selection {
+  background-color: var(--primary-light);
+  color: var(--primary-foreground);
+}
+
+/* Focus visible amélioré */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}

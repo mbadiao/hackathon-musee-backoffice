@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  museum-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: museum-admin-app
+    ports:
+      - "3005:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - MONGODB_URI=mongodb+srv://mbayediao2:mbayediao2003@ecomerce.feavmkc.mongodb.net/musee?retryWrites=true&w=majority&appName=ecomerce
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+    restart: unless-stopped
+    networks:
+      - museum-network
+
+networks:
+  museum-network:
+    driver: bridge
