@@ -233,7 +233,7 @@ html {
   }
   
   .text-gradient {
-    @apply bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent;
+    @apply text-primary;
   }
   
   .shadow-primary {

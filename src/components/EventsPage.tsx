@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, Edit, Trash2, Save, Upload, Clock, MapPin, Link, Calendar, Eye, LayoutGrid, ArrowLeft } from "lucide-react";
-import { PageType } from "@/types";
+import { PageType, Event } from "@/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -11,21 +11,7 @@ import { Label } from "./ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Sidebar } from "./Sidebar";
-
-interface Event {
-  id: string;
-  name: string;
-  date: string;
-  time: string;
-  description: string;
-  location: string;
-  bannerImage: string;
-  relatedExhibition: string;
-  capacity: string;
-  price: string;
-  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
-  category: string;
-}
+import { toast } from "sonner";
 
 interface EventsPageProps {
   onNavigate: (page: PageType) => void;
@@ -33,53 +19,25 @@ interface EventsPageProps {
 }
 
 export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: '1',
-      name: 'Artist Talk: Contemporary African Voices',
-      date: '2024-03-15',
-      time: '18:00',
-      description: 'Join us for an intimate conversation with featured artists from our Contemporary African Voices exhibition. Discover the stories behind their groundbreaking works and their vision for the future of African art.',
-      location: 'Museum Auditorium',
-      bannerImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
-      relatedExhibition: 'Contemporary African Voices',
-      capacity: '150',
-      price: 'Free',
-      status: 'upcoming',
-      category: 'Artist Talk'
-    },
-    {
-      id: '2',
-      name: 'Guided Tour: Ancient Kingdoms',
-      date: '2024-03-20',
-      time: '14:00',
-      description: 'Embark on a journey through time with our expert curators as they guide you through the Ancient Kingdoms of West Africa exhibition.',
-      location: 'Historical Wing',
-      bannerImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
-      relatedExhibition: 'Ancient Kingdoms of West Africa',
-      capacity: '25',
-      price: '500 CFA',
-      status: 'upcoming',
-      category: 'Guided Tour'
-    }
-  ]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [exhibitions] = useState([
-    'Contemporary African Voices',
-    'Ancient Kingdoms of West Africa',
-    'Modern Senegalese Art',
-    'Colonial Artifacts',
-    'No Exhibition'
+    'Voix Africaines Contemporaines',
+    'Royaumes Anciens d\'Afrique de l\'Ouest',
+    'Art Sénégalais Moderne',
+    'Artéfacts Coloniaux',
+    'Aucune Exposition'
   ]);
 
   const [categories] = useState([
-    'Artist Talk',
-    'Guided Tour',
-    'Workshop',
-    'Conference',
-    'Opening Night',
-    'Educational Program',
-    'Special Event'
+    'Conférence d\'Artiste',
+    'Visite Guidée',
+    'Atelier',
+    'Conférence',
+    'Soirée d\'Ouverture',
+    'Programme Éducatif',
+    'Événement Spécial'
   ]);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -94,11 +52,42 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
     description: '',
     location: '',
     bannerImage: '',
-    relatedExhibition: 'No Exhibition',
+    relatedExhibition: 'Aucune Exposition',
     capacity: '',
     price: '',
-    category: 'Artist Talk'
+    category: 'Conférence d\'Artiste'
   });
+
+  // Fonction pour récupérer les événements depuis l'API
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/events', {
+        credentials: 'include',
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        setEvents(result.data);
+      } else {
+        toast.error('Erreur lors du chargement des événements', {
+          description: result.message || 'Impossible de charger les événements'
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des événements:', error);
+      toast.error('Erreur de connexion', {
+        description: 'Impossible de se connecter au serveur'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Charger les événements au montage du composant
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -116,10 +105,10 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
       description: '',
       location: '',
       bannerImage: '',
-      relatedExhibition: 'No Exhibition',
+      relatedExhibition: 'Aucune Exposition',
       capacity: '',
       price: '',
-      category: 'Artist Talk'
+      category: 'Conférence d\'Artiste'
     });
     setSelectedEvent(null);
     setView('create');
@@ -142,39 +131,64 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
     setView('edit');
   };
 
-  const handleSaveEvent = () => {
-    // Determine status based on date
-    const eventDate = new Date(formData.date);
-    const now = new Date();
-    let status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' = 'upcoming';
-    
-    if (eventDate.toDateString() === now.toDateString()) {
-      status = 'ongoing';
-    } else if (eventDate < now) {
-      status = 'completed';
-    }
+  const handleSaveEvent = async () => {
+    try {
+      const url = selectedEvent ? `/api/events/${selectedEvent._id}` : '/api/events';
+      const method = selectedEvent ? 'PUT' : 'POST';
 
-    if (selectedEvent) {
-      // Edit existing event
-      setEvents(events.map(event =>
-        event.id === selectedEvent.id
-          ? { ...event, ...formData, status }
-          : event
-      ));
-    } else {
-      // Create new event
-      const newEvent: Event = {
-        id: Date.now().toString(),
-        ...formData,
-        status
-      };
-      setEvents([...events, newEvent]);
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(
+          selectedEvent ? 'Événement modifié avec succès' : 'Événement créé avec succès'
+        );
+        setView('list');
+        fetchEvents(); // Recharger les événements
+      } else {
+        toast.error('Erreur lors de la sauvegarde', {
+          description: result.message || 'Impossible de sauvegarder l\'événement'
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast.error('Erreur de connexion', {
+        description: 'Impossible de se connecter au serveur'
+      });
     }
-    setView('list');
   };
 
-  const handleDeleteEvent = (eventId: string) => {
-    setEvents(events.filter(event => event.id !== eventId));
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Événement supprimé avec succès');
+        fetchEvents(); // Recharger les événements
+      } else {
+        toast.error('Erreur lors de la suppression', {
+          description: result.message || 'Impossible de supprimer l\'événement'
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast.error('Erreur de connexion', {
+        description: 'Impossible de se connecter au serveur'
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -187,17 +201,27 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'upcoming': return 'À Venir';
+      case 'ongoing': return 'En Cours';
+      case 'completed': return 'Terminé';
+      case 'cancelled': return 'Annulé';
+      default: return status;
+    }
+  };
+
   const renderListView = () => (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Events</h1>
-          <p className="text-muted-foreground">Manage museum events and programs</p>
+          <h1 className="text-2xl font-semibold text-foreground">Événements</h1>
+          <p className="text-muted-foreground">Gérer les événements et programmes du musée</p>
         </div>
         <Button onClick={handleCreateEvent} className="bg-primary hover:bg-primary/90">
           <Plus className="w-4 h-4 mr-2" />
-          Create New Event
+          Créer un Nouvel Événement
         </Button>
       </div>
 
@@ -210,7 +234,7 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                 <Calendar className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Upcoming</p>
+                <p className="text-sm text-muted-foreground">À Venir</p>
                 <p className="text-xl font-semibold">{events.filter(e => e.status === 'upcoming').length}</p>
               </div>
             </div>
@@ -223,7 +247,7 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                 <Clock className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Ongoing</p>
+                <p className="text-sm text-muted-foreground">En Cours</p>
                 <p className="text-xl font-semibold">{events.filter(e => e.status === 'ongoing').length}</p>
               </div>
             </div>
@@ -236,7 +260,7 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                 <Eye className="w-5 h-5 text-gray-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
+                <p className="text-sm text-muted-foreground">Terminés</p>
                 <p className="text-xl font-semibold">{events.filter(e => e.status === 'completed').length}</p>
               </div>
             </div>
@@ -265,7 +289,7 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Search events..."
+                  placeholder="Rechercher des événements..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -274,22 +298,22 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
             </div>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Filtrer par statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="upcoming">Upcoming</SelectItem>
-                <SelectItem value="ongoing">Ongoing</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="all">Tous les Statuts</SelectItem>
+                <SelectItem value="upcoming">À Venir</SelectItem>
+                <SelectItem value="ongoing">En Cours</SelectItem>
+                <SelectItem value="completed">Terminés</SelectItem>
+                <SelectItem value="cancelled">Annulés</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterCategory} onValueChange={setFilterCategory}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by category" />
+                <SelectValue placeholder="Filtrer par catégorie" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">Toutes les Catégories</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category} value={category}>
                     {category}
@@ -302,9 +326,17 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
       </Card>
 
       {/* Events Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEvents.map(event => (
-          <Card key={event.id} className="group hover:shadow-lg transition-shadow">
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Chargement des événements...</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEvents.map(event => (
+            <Card key={event._id} className="group hover:shadow-lg transition-shadow">
             <div className="aspect-video overflow-hidden rounded-t-lg bg-muted">
               <ImageWithFallback
                 src={event.bannerImage}
@@ -319,7 +351,7 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                   <h3 className="font-semibold text-lg leading-tight">{event.name}</h3>
                 </div>
                 <Badge className={getStatusColor(event.status)}>
-                  {event.status}
+                  {getStatusLabel(event.status)}
                 </Badge>
               </div>
               
@@ -336,14 +368,14 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                   <MapPin className="w-4 h-4" />
                   <span>{event.location}</span>
                 </div>
-                {event.relatedExhibition !== 'No Exhibition' && (
+                {event.relatedExhibition !== 'Aucune Exposition' && (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Link className="w-4 h-4" />
                     <span className="truncate">{event.relatedExhibition}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Capacity: {event.capacity}</span>
+                  <span>Capacité : {event.capacity}</span>
                   <span className="font-medium">{event.price}</span>
                 </div>
               </div>
@@ -356,12 +388,12 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                   className="flex-1"
                 >
                   <Edit className="w-4 h-4 mr-2" />
-                  Edit
+                  Modifier
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleDeleteEvent(event.id)}
+                  onClick={() => handleDeleteEvent(event._id!)}
                   className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -370,7 +402,14 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
             </CardContent>
           </Card>
         ))}
-      </div>
+        </div>
+      )}
+      
+      {!loading && filteredEvents.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Aucun événement trouvé</p>
+        </div>
+      )}
     </div>
   );
 
@@ -380,10 +419,10 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
       <div className="flex items-center gap-4">
         <Button variant="ghost" onClick={() => setView('list')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Events
+          Retour aux Événements
         </Button>
         <h1 className="text-2xl font-semibold">
-          {selectedEvent ? 'Edit Event' : 'Create New Event'}
+          {selectedEvent ? 'Modifier l\'Événement' : 'Créer un Nouvel Événement'}
         </h1>
       </div>
 
@@ -393,16 +432,16 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
           {/* Basic Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Event Details</CardTitle>
+              <CardTitle>Détails de l'Événement</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="name">Event Name</Label>
+                <Label htmlFor="name">Nom de l'Événement</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Enter event name..."
+                  placeholder="Entrez le nom de l'événement..."
                 />
               </div>
 
@@ -429,21 +468,21 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="location">Location</Label>
+                  <Label htmlFor="location">Lieu</Label>
                   <Input
                     id="location"
                     value={formData.location}
                     onChange={(e) => setFormData({...formData, location: e.target.value})}
-                    placeholder="e.g., Museum Auditorium"
+                    placeholder="ex: Auditorium du Musée"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="capacity">Capacity</Label>
+                  <Label htmlFor="capacity">Capacité</Label>
                   <Input
                     id="capacity"
                     value={formData.capacity}
                     onChange={(e) => setFormData({...formData, capacity: e.target.value})}
-                    placeholder="e.g., 150"
+                    placeholder="ex: 150"
                   />
                 </div>
               </div>
@@ -468,12 +507,12 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="price">Price</Label>
+                  <Label htmlFor="price">Prix</Label>
                   <Input
                     id="price"
                     value={formData.price}
                     onChange={(e) => setFormData({...formData, price: e.target.value})}
-                    placeholder="e.g., Free or 500 CFA"
+                    placeholder="ex: Gratuit ou 500 CFA"
                   />
                 </div>
               </div>
@@ -494,12 +533,12 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
           {/* Banner Image Upload */}
           <Card>
             <CardHeader>
-              <CardTitle>Banner Image</CardTitle>
+              <CardTitle>Image de Bannière</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="bannerImage">Banner Image URL</Label>
+                  <Label htmlFor="bannerImage">URL de l'Image de Bannière</Label>
                   <Input
                     id="bannerImage"
                     value={formData.bannerImage}
@@ -540,11 +579,11 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
           {/* Related Exhibition */}
           <Card>
             <CardHeader>
-              <CardTitle>Related Exhibition</CardTitle>
+              <CardTitle>Exposition Associée</CardTitle>
             </CardHeader>
             <CardContent>
               <div>
-                <Label htmlFor="relatedExhibition">Link to Exhibition</Label>
+                <Label htmlFor="relatedExhibition">Lier à une Exposition</Label>
                 <Select 
                   value={formData.relatedExhibition} 
                   onValueChange={(value) => setFormData({...formData, relatedExhibition: value})}
@@ -576,10 +615,10 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                   className="w-full bg-primary hover:bg-primary/90"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  Save Event
+                  Sauvegarder l'Événement
                 </Button>
                 <Button variant="outline" onClick={() => setView('list')} className="w-full">
-                  Cancel
+                  Annuler
                 </Button>
               </div>
             </CardContent>

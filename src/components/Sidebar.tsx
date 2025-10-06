@@ -24,13 +24,13 @@ interface SidebarProps {
 }
 
 const sidebarNavItems = [
-  { name: 'Dashboard', page: 'dashboard' as PageType, icon: Home },
-  { name: 'Posts', page: 'posts' as PageType, icon: FileText },
-  { name: 'Events', page: 'events' as PageType, icon: Calendar },
-  { name: 'Artworks', page: 'artworks' as PageType, icon: Camera },
-  { name: 'Exhibitions', page: 'exhibitions' as PageType, icon: BookOpen },
-  { name: 'Media', page: 'media' as PageType, icon: ImageIcon },
-  { name: 'Users', page: 'users' as PageType, icon: Users },
+  { name: 'Tableau de Bord', page: 'dashboard' as PageType, icon: Home },
+  { name: 'Articles', page: 'posts' as PageType, icon: FileText },
+  { name: 'Événements', page: 'events' as PageType, icon: Calendar },
+  { name: 'Œuvres d\'Art', page: 'artworks' as PageType, icon: Camera },
+  { name: 'Expositions', page: 'exhibitions' as PageType, icon: BookOpen },
+  { name: 'Médiathèque', page: 'media' as PageType, icon: ImageIcon },
+  { name: 'Utilisateurs', page: 'users' as PageType, icon: Users },
   { name: 'Notifications', page: 'notifications' as PageType, icon: Bell },
 ];
 
@@ -53,7 +53,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
             <h1 className="text-lg font-semibold text-sidebar-foreground">
               Musée
             </h1>
-            <p className="text-xs text-muted-foreground">Admin Portal</p>
+            <p className="text-xs text-muted-foreground">Portail Admin</p>
           </div>
         </div>
       </div>
@@ -104,7 +104,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
           <div className="flex items-center gap-3 mb-3">
             <Avatar className="w-10 h-10 border-2 border-primary/20">
               <AvatarImage src="/placeholder-avatar.jpg" alt="Admin" />
-              <AvatarFallback className="bg-gradient-to-br from-primary to-primary-hover text-white font-semibold">
+              <AvatarFallback className="bg-primary text-white font-semibold">
                 AD
               </AvatarFallback>
             </Avatar>

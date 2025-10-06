@@ -41,23 +41,19 @@ export interface Post {
   updatedAt: Date;
 }
 
-export interface Artwork {
+export interface Event {
   _id?: string;
-  title: string;
-  author: string;
-  period: string;
-  images: string[];
-  themeId: string;
-  description: {
-    fr: string;
-    en: string;
-    wo: string;
-  };
-  audio?: {
-    fr?: string;
-    en?: string;
-    wo?: string;
-  };
+  name: string;
+  date: string;
+  time: string;
+  description: string;
+  location: string;
+  bannerImage: string;
+  relatedExhibition: string;
+  capacity: string;
+  price: string;
+  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  category: string;
   createdAt: Date;
   updatedAt: Date;
 }

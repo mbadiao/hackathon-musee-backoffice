@@ -401,7 +401,7 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
                 {/* Footer avec auteur et actions */}
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center text-white text-xs font-semibold">
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-semibold">
                       {post.author.charAt(0).toUpperCase()}
                     </div>
                     <div>

@@ -73,11 +73,11 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-[#1a1a1a]/85" />
         
         {/* Subtle clay overlay effect */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#D2691E]/5 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[#D2691E]/5" />
         
         <div className="relative z-10 flex flex-col justify-center px-12 text-foreground">
           <div className="mb-6">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#D2691E]/20 to-[#E07A5F]/10 border border-[#D2691E]/40 flex items-center justify-center mb-6 backdrop-blur-sm">
+            <div className="w-20 h-20 rounded-2xl bg-[#D2691E]/20 border border-[#D2691E]/40 flex items-center justify-center mb-6 backdrop-blur-sm">
               <svg
                 className="w-10 h-10 text-[#D2691E]"
                 fill="none"
@@ -102,7 +102,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
           </p>
           
           {/* Decorative clay line */}
-          <div className="mt-8 w-24 h-px bg-gradient-to-r from-[#D2691E] to-transparent"></div>
+          <div className="mt-8 w-24 h-px bg-[#D2691E]"></div>
         </div>
       </div>
 
