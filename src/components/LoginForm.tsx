@@ -66,8 +66,8 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       {/* Left side - Museum image with gradient overlay */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <ImageWithFallback
-          src="https://images.unsplash.com/photo-1640200357933-1892987f5176?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNldW0lMjBidWlsZGluZyUyMGNsYXNzaWNhbCUyMGFyY2hpdGVjdHVyZXxlbnwxfHx8fDE3NTk2MDY4MjV8MA&ixlib=rb-4.1.0&q=80&w=1080"
-          alt="Museum building"
+          src="/imageDf1.png"
+          alt="Musée"
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-[#1a1a1a]/85" />

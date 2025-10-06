@@ -28,3 +28,36 @@ export interface LoginResponse {
   };
   token?: string;
 }
+
+export interface Post {
+  _id?: string;
+  title: string;
+  author: string;
+  content: string;
+  images: string[]; // Jusqu'à 3 images
+  category: string;
+  status: 'draft' | 'published';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Artwork {
+  _id?: string;
+  title: string;
+  author: string;
+  period: string;
+  images: string[];
+  themeId: string;
+  description: {
+    fr: string;
+    en: string;
+    wo: string;
+  };
+  audio?: {
+    fr?: string;
+    en?: string;
+    wo?: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}

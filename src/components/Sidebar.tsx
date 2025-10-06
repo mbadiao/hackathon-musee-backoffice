@@ -7,7 +7,7 @@ import {
   Calendar,
   Camera,
   BookOpen,
-  Image,
+  Image as ImageIcon,
   Users,
   Bell,
   LogOut,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { DarkModeToggle } from './DarkModeToggle';
 import { PageType } from '@/types';
+import Image from 'next/image';
 
 interface SidebarProps {
   currentPage: PageType;
@@ -28,7 +29,7 @@ const sidebarNavItems = [
   { name: 'Events', page: 'events' as PageType, icon: Calendar },
   { name: 'Artworks', page: 'artworks' as PageType, icon: Camera },
   { name: 'Exhibitions', page: 'exhibitions' as PageType, icon: BookOpen },
-  { name: 'Media', page: 'media' as PageType, icon: Image },
+  { name: 'Media', page: 'media' as PageType, icon: ImageIcon },
   { name: 'Users', page: 'users' as PageType, icon: Users },
   { name: 'Notifications', page: 'notifications' as PageType, icon: Bell },
 ];
@@ -36,15 +37,21 @@ const sidebarNavItems = [
 export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
   return (
     <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col animate-slide-in-left">
-      {/* Logo et titre - design épuré */}
+      {/* Logo et titre - design épuré avec logo du musée */}
       <div className="px-6 py-8">
         <div className="flex items-center gap-3 group cursor-pointer">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center shadow-primary group-hover:scale-105 smooth-transition">
-            <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
+          <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm border border-border group-hover:scale-105 smooth-transition overflow-hidden">
+            <Image 
+              src="/Gemini_Generated_Image_yn0cb2yn0cb2yn0c-removebg.png" 
+              alt="Musée Logo" 
+              width={48}
+              height={48}
+              className="object-contain"
+            />
           </div>
           <div>
             <h1 className="text-lg font-semibold text-sidebar-foreground">
-              Museum
+              Musée
             </h1>
             <p className="text-xs text-muted-foreground">Admin Portal</p>
           </div>

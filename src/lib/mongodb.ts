@@ -1,9 +1,10 @@
 import { MongoClient, Db } from 'mongodb';
+import { MONGODB_URI } from '@/config/env';
 
 let cachedClient: MongoClient | null = null;
 
 async function connectToDatabase(): Promise<MongoClient> {
-  if (!process.env.MONGODB_URI) {
+  if (!MONGODB_URI) {
     throw new Error('Veuillez définir la variable d\'environnement MONGODB_URI');
   }
 
@@ -11,7 +12,7 @@ async function connectToDatabase(): Promise<MongoClient> {
     return cachedClient;
   }
 
-  const client = new MongoClient(process.env.MONGODB_URI);
+  const client = new MongoClient(MONGODB_URI);
   await client.connect();
   cachedClient = client;
   

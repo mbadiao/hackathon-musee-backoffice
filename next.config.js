@@ -12,7 +12,6 @@ const nextConfig = {
     },
   },
   images: {
-    domains: ['images.unsplash.com', 'via.placeholder.com'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -21,6 +20,14 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'tmhvuxwsmztxqwiaxqja.supabase.co',
       },
     ],
   },
