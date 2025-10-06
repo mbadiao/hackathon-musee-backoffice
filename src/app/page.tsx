@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { LoginForm } from "@/components/LoginForm";
 import { Dashboard } from "@/components/Dashboard";
 import { PostsPage } from "@/components/PostsPage";
@@ -11,17 +12,39 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 import { PageType } from "@/types";
 
-function AppContent() {
+function AppContentInner() {
   const { isAuthenticated, isLoading, logout } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
+
+  // Initialiser la page depuis l'URL ou localStorage
+  useEffect(() => {
+    if (isAuthenticated) {
+      const pageFromUrl = searchParams.get('page') as PageType;
+      const savedPage = localStorage.getItem('currentPage') as PageType;
+      
+      if (pageFromUrl && ['dashboard', 'posts', 'events', 'artworks'].includes(pageFromUrl)) {
+        setCurrentPage(pageFromUrl);
+      } else if (savedPage && ['dashboard', 'posts', 'events', 'artworks'].includes(savedPage)) {
+        setCurrentPage(savedPage);
+      }
+    }
+  }, [isAuthenticated, searchParams]);
 
   const handleLogout = async () => {
     await logout();
     setCurrentPage('dashboard');
+    localStorage.removeItem('currentPage');
   };
 
   const handleNavigation = (page: PageType) => {
     setCurrentPage(page);
+    localStorage.setItem('currentPage', page);
+    // Mettre à jour l'URL sans recharger la page
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', page);
+    window.history.pushState({}, '', url.toString());
   };
   
   // Afficher un loader pendant la vérification de l'authentification
@@ -53,6 +76,21 @@ function AppContent() {
     <div className="h-screen w-full overflow-hidden">
       {isAuthenticated ? renderCurrentPage() : <LoginForm />}
     </div>
+  );
+}
+
+function AppContent() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-16 h-16 border-4 border-[#D2691E]/20 border-t-[#D2691E] rounded-full animate-spin" />
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <AppContentInner />
+    </Suspense>
   );
 }
 

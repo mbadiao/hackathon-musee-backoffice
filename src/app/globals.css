@@ -51,7 +51,7 @@
   
   /* Borders et inputs */
   --border: #e2e8f0;
-  --input: transparent;
+  --input: #ffffff;
   --input-background: #ffffff;
   --input-border: #cbd5e1;
   --switch-background: #e2e8f0;
@@ -98,20 +98,35 @@
   --foreground: #ffffff;
   --card: #2d2d2d;
   --card-foreground: #ffffff;
+  --card-hover: #3a3a3a;
   --popover: #2d2d2d;
   --popover-foreground: #ffffff;
   --primary: #E07A5F;
   --primary-foreground: #ffffff;
+  --primary-hover: #D2691E;
+  --primary-light: #F4A460;
   --secondary: #343a40;
   --secondary-foreground: #adb5bd;
   --muted: #343a40;
   --muted-foreground: #adb5bd;
   --accent: #F2CC8F;
   --accent-foreground: #1a1a1a;
+  --accent-hover: #E6B366;
+  --accent-light: #F8E6C7;
   --destructive: #dc3545;
   --destructive-foreground: #ffffff;
+  --destructive-light: #f8d7da;
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --success-light: #d1fae5;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --warning-light: #fef3c7;
   --border: #495057;
-  --input: #2d2d2d;
+  --input: #404040;
+  --input-background: #404040;
+  --input-border: #555555;
+  --switch-background: #555555;
   --ring: #E07A5F;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
@@ -128,6 +143,8 @@
   --sidebar-accent-foreground: #adb5bd;
   --sidebar-border: #495057;
   --sidebar-ring: #E07A5F;
+  --sidebar-hover: #3a3a3a;
+  --sidebar-active: #404040;
 }
 
 @layer base {
