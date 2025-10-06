@@ -750,30 +750,78 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
           </Card>
 
           {/* Preview */}
-          {(formData.name || formData.artist) && (
+          {(formData.name || formData.artist || formData.image || selectedFile) && (
             <Card className="border-0 shadow-lg">
               <CardHeader>
-                <CardTitle>Aperçu</CardTitle>
+                <CardTitle>Aperçu de l'Œuvre</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {formData.name && (
-                  <h3 className="font-medium">{formData.name}</h3>
-                )}
-                {formData.artist && (
-                  <p className="text-muted-foreground">{formData.artist}</p>
-                )}
-                {formData.year && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="w-4 h-4" />
-                    <span>{formData.year}</span>
+              <CardContent className="space-y-4">
+                {/* Image de prévisualisation */}
+                {(formData.image || selectedFile) && (
+                  <div className="w-full h-32 rounded-lg overflow-hidden bg-muted">
+                    {selectedFile ? (
+                      <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                        <div className="text-center">
+                          <Upload className="w-6 h-6 mx-auto mb-2 text-primary" />
+                          <p className="text-xs text-muted-foreground">
+                            {selectedFile.name}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <ImageWithFallback
+                        src={formData.image}
+                        alt="Aperçu de l'œuvre"
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                   </div>
                 )}
-                {formData.medium && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Palette className="w-4 h-4" />
-                    <span>{formData.medium}</span>
+
+                {/* Informations de l'œuvre */}
+                <div className="space-y-2">
+                  {formData.name && (
+                    <h3 className="font-semibold text-lg">{formData.name}</h3>
+                  )}
+                  {formData.artist && (
+                    <p className="text-muted-foreground font-medium">{formData.artist}</p>
+                  )}
+                  
+                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                    {formData.year && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{formData.year}</span>
+                      </div>
+                    )}
+                    {formData.medium && (
+                      <div className="flex items-center gap-1">
+                        <Palette className="w-3 h-3" />
+                        <span>{formData.medium}</span>
+                      </div>
+                    )}
+                    {formData.dimensions && (
+                      <div className="flex items-center gap-1">
+                        <LayoutGrid className="w-3 h-3" />
+                        <span>{formData.dimensions}</span>
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  {formData.exhibition && formData.exhibition !== 'Non Assigné' && (
+                    <div className="mt-2">
+                      <Badge variant="secondary" className="bg-primary/10 text-primary">
+                        {formData.exhibition}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {formData.description && (
+                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                      {formData.description}
+                    </p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
