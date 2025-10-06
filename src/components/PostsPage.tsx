@@ -49,6 +49,7 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
   const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     author: '',
@@ -98,6 +99,7 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
       status: 'draft',
       images: []
     });
+    setSelectedFiles([]);
     setSelectedPost(null);
     setView('create');
   };
@@ -111,17 +113,19 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
       status: post.status,
       images: post.images || []
     });
+    setSelectedFiles([]);
     setSelectedPost(post);
     setView('edit');
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // Vérifier qu'on ne dépasse pas 3 images
+    // Vérifier qu'on ne dépasse pas 3 images au total (images existantes + nouvelles)
     const currentImageCount = formData.images.length;
-    const availableSlots = 3 - currentImageCount;
+    const currentFileCount = selectedFiles.length;
+    const availableSlots = 3 - currentImageCount - currentFileCount;
     
     if (availableSlots <= 0) {
       toast.error('Maximum 3 images', {
@@ -130,43 +134,11 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
       return;
     }
 
-    const filesToUpload = Array.from(files).slice(0, availableSlots);
-
-    try {
-      setUploading(true);
-      const uploadedUrls: string[] = [];
-
-      // Upload chaque fichier
-      for (const file of filesToUpload) {
-        const formDataToSend = new FormData();
-        formDataToSend.append('file', file);
-
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          credentials: 'include',
-          body: formDataToSend,
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          uploadedUrls.push(data.url);
-        } else {
-          console.error('Erreur upload:', data.message);
-        }
-      }
-
-      if (uploadedUrls.length > 0) {
-        setFormData(prev => ({ 
-          ...prev, 
-          images: [...prev.images, ...uploadedUrls].slice(0, 3) 
-        }));
-      }
-    } catch (error) {
-      console.error('Erreur upload:', error);
-      alert('Erreur lors de l\'upload des images');
-    } finally {
-      setUploading(false);
-    }
+    const filesToAdd = Array.from(files).slice(0, availableSlots);
+    setSelectedFiles(prev => [...prev, ...filesToAdd]);
+    
+    // Reset l'input pour permettre la sélection du même fichier
+    e.target.value = '';
   };
 
   const handleRemoveImage = (index: number) => {
@@ -176,21 +148,60 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
     }));
   };
 
+  const handleRemoveSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSavePost = async () => {
     try {
+      setUploading(true);
+      
+      // Upload des nouveaux fichiers sélectionnés
+      const uploadedUrls: string[] = [];
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          const formDataToSend = new FormData();
+          formDataToSend.append('file', file);
+
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            credentials: 'include',
+            body: formDataToSend,
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            uploadedUrls.push(data.url);
+          } else {
+            console.error('Erreur upload:', data.message);
+            toast.error('Erreur lors de l\'upload', {
+              description: `Impossible d'uploader ${file.name}`
+            });
+            return;
+          }
+        }
+      }
+
+      // Préparer les données avec les nouvelles images uploadées
+      const postData = {
+        ...formData,
+        images: [...formData.images, ...uploadedUrls].slice(0, 3)
+      };
+
       if (selectedPost && selectedPost._id) {
         // Update existing post
         const response = await fetch(`/api/posts/${selectedPost._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify(formData),
+          body: JSON.stringify(postData),
         });
 
         const data = await response.json();
         if (data.success) {
           await fetchPosts();
           setView('list');
+          setSelectedFiles([]); // Reset des fichiers sélectionnés
           toast.success('Post mis à jour', {
             description: 'Le post a été modifié avec succès'
           });
@@ -205,13 +216,14 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify(formData),
+          body: JSON.stringify(postData),
         });
 
         const data = await response.json();
         if (data.success) {
           await fetchPosts();
           setView('list');
+          setSelectedFiles([]); // Reset des fichiers sélectionnés
           toast.success('Post créé', {
             description: 'Le nouveau post a été ajouté avec succès'
           });
@@ -226,6 +238,8 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
       toast.error('Erreur', {
         description: 'Une erreur est survenue lors de la sauvegarde'
       });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -504,45 +518,34 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
             <CardContent>
               <div className="space-y-4">
                 {/* Zone d'upload */}
-                {formData.images.length < 3 && (
+                {formData.images.length + selectedFiles.length < 3 && (
                   <div className="border-2 border-dashed border-border rounded-xl p-8 text-center bg-muted/30 hover:bg-muted/50 smooth-transition">
                     <Upload className="w-8 h-8 mx-auto mb-4 text-muted-foreground" />
                     <p className="text-muted-foreground mb-3">
-                      Ajoutez jusqu'à {3 - formData.images.length} image{3 - formData.images.length > 1 ? 's' : ''} supplémentaire{3 - formData.images.length > 1 ? 's' : ''}
+                      Ajoutez jusqu'à {3 - formData.images.length - selectedFiles.length} image{3 - formData.images.length - selectedFiles.length > 1 ? 's' : ''} supplémentaire{3 - formData.images.length - selectedFiles.length > 1 ? 's' : ''}
                     </p>
                     <input
                       type="file"
                       id="file-upload"
                       accept="image/*"
                       multiple
-                      onChange={handleFileUpload}
+                      onChange={handleFileSelect}
                       className="hidden"
-                      disabled={uploading}
                     />
                     <label htmlFor="file-upload">
                       <Button 
                         variant="outline" 
                         type="button"
-                        disabled={uploading}
                         onClick={() => document.getElementById('file-upload')?.click()}
                       >
-                        {uploading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Upload en cours...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="w-4 h-4 mr-2" />
-                            Choisir des images
-                          </>
-                        )}
+                        <Upload className="w-4 h-4 mr-2" />
+                        Choisir des images
                       </Button>
                     </label>
                   </div>
                 )}
 
-                {/* Aperçu des images */}
+                {/* Aperçu des images existantes */}
                 {formData.images.length > 0 && (
                   <div className="grid grid-cols-3 gap-4">
                     {formData.images.map((img, index) => (
@@ -565,6 +568,38 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Aperçu des fichiers sélectionnés */}
+                {selectedFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Fichiers sélectionnés (seront uploadés lors de la sauvegarde)</Label>
+                    <div className="grid grid-cols-3 gap-4">
+                      {selectedFiles.map((file, index) => (
+                        <div key={index} className="relative group animate-scale-in">
+                          <div className="aspect-square rounded-lg overflow-hidden bg-muted border-2 border-dashed border-primary/30">
+                            <div className="w-full h-full flex items-center justify-center">
+                              <div className="text-center">
+                                <Upload className="w-6 h-6 mx-auto mb-2 text-primary" />
+                                <p className="text-xs text-muted-foreground px-2 truncate">
+                                  {file.name}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveSelectedFile(index)}
+                            className="absolute top-2 right-2 p-1.5 bg-destructive text-white rounded-lg opacity-0 group-hover:opacity-100 smooth-transition hover:bg-destructive/90 shadow-lg"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <div className="absolute bottom-2 left-2 px-2 py-1 bg-primary/60 text-white text-xs rounded-md backdrop-blur-sm">
+                            Nouveau {index + 1}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -619,10 +654,19 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
                 <Button 
                   onClick={handleSavePost} 
                   className="w-full bg-primary hover:bg-primary-hover shadow-primary"
-                  disabled={!formData.title || !formData.author || !formData.content}
+                  disabled={!formData.title || !formData.author || !formData.content || uploading}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  {formData.status === 'published' ? 'Publier' : 'Sauvegarder'}
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {selectedFiles.length > 0 ? 'Upload et sauvegarde...' : 'Sauvegarde...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      {formData.status === 'published' ? 'Publier' : 'Sauvegarder'}
+                    </>
+                  )}
                 </Button>
                 <Button 
                   variant="outline" 

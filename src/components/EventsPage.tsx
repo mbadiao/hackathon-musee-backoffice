@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, Edit, Trash2, Save, Upload, Clock, MapPin, Link, Calendar, Eye, LayoutGrid, ArrowLeft } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Save, Upload, Clock, MapPin, Link, Calendar, Eye, LayoutGrid, ArrowLeft, Loader2, X } from "lucide-react";
 import { PageType, Event } from "@/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -21,6 +21,8 @@ interface EventsPageProps {
 export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [exhibitions] = useState([
     'Voix Africaines Contemporaines',
@@ -97,6 +99,21 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0]; // Une seule image pour les événements
+    setSelectedFile(file);
+    
+    // Reset l'input pour permettre la sélection du même fichier
+    e.target.value = '';
+  };
+
+  const handleRemoveSelectedFile = () => {
+    setSelectedFile(null);
+  };
+
   const handleCreateEvent = () => {
     setFormData({
       name: '',
@@ -110,6 +127,7 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
       price: '',
       category: 'Conférence d\'Artiste'
     });
+    setSelectedFile(null);
     setSelectedEvent(null);
     setView('create');
   };
@@ -127,12 +145,45 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
       price: event.price,
       category: event.category
     });
+    setSelectedFile(null);
     setSelectedEvent(event);
     setView('edit');
   };
 
   const handleSaveEvent = async () => {
     try {
+      setUploading(true);
+      
+      // Upload du fichier sélectionné s'il y en a un
+      let bannerImageUrl = formData.bannerImage;
+      if (selectedFile) {
+        const formDataToSend = new FormData();
+        formDataToSend.append('file', selectedFile);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          credentials: 'include',
+          body: formDataToSend,
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          bannerImageUrl = data.url;
+        } else {
+          console.error('Erreur upload:', data.message);
+          toast.error('Erreur lors de l\'upload', {
+            description: `Impossible d'uploader ${selectedFile.name}`
+          });
+          return;
+        }
+      }
+
+      // Préparer les données avec l'image uploadée
+      const eventData = {
+        ...formData,
+        bannerImage: bannerImageUrl
+      };
+
       const url = selectedEvent ? `/api/events/${selectedEvent._id}` : '/api/events';
       const method = selectedEvent ? 'PUT' : 'POST';
 
@@ -142,7 +193,7 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(formData),
+        body: JSON.stringify(eventData),
       });
 
       const result = await response.json();
@@ -152,6 +203,7 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
           selectedEvent ? 'Événement modifié avec succès' : 'Événement créé avec succès'
         );
         setView('list');
+        setSelectedFile(null); // Reset du fichier sélectionné
         fetchEvents(); // Recharger les événements
       } else {
         toast.error('Erreur lors de la sauvegarde', {
@@ -163,6 +215,8 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
       toast.error('Erreur de connexion', {
         description: 'Impossible de se connecter au serveur'
       });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -547,15 +601,59 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                   />
                 </div>
                 
-                <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
-                  <Upload className="w-8 h-8 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    Drag & drop banner image here, or click to browse
-                  </p>
-                  <Button variant="outline" className="mt-2">
-                    Choose File
-                  </Button>
-                </div>
+                {!selectedFile && (
+                  <div className="border-2 border-dashed border-border rounded-xl p-8 text-center bg-muted/30 hover:bg-muted/50 smooth-transition">
+                    <Upload className="w-8 h-8 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground mb-3">
+                      Ajoutez une image de bannière pour l'événement
+                    </p>
+                    <input
+                      type="file"
+                      id="banner-upload"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <label htmlFor="banner-upload">
+                      <Button 
+                        variant="outline" 
+                        type="button"
+                        onClick={() => document.getElementById('banner-upload')?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Choisir une image
+                      </Button>
+                    </label>
+                  </div>
+                )}
+
+                {/* Aperçu du fichier sélectionné */}
+                {selectedFile && (
+                  <div className="relative group animate-scale-in">
+                    <div className="w-full h-64 rounded-lg overflow-hidden bg-muted border-2 border-dashed border-primary/30">
+                      <div className="w-full h-full flex items-center justify-center">
+                        <div className="text-center">
+                          <Upload className="w-8 h-8 mx-auto mb-4 text-primary" />
+                          <p className="text-muted-foreground px-4">
+                            {selectedFile.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Sera uploadé lors de la sauvegarde
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleRemoveSelectedFile}
+                      className="absolute top-2 right-2 p-1.5 bg-destructive text-white rounded-lg opacity-0 group-hover:opacity-100 smooth-transition hover:bg-destructive/90 shadow-lg"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-primary/60 text-white text-xs rounded-md backdrop-blur-sm">
+                      Nouvelle bannière
+                    </div>
+                  </div>
+                )}
 
                 {formData.bannerImage && (
                   <div className="mt-4">
@@ -613,9 +711,19 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                 <Button 
                   onClick={handleSaveEvent} 
                   className="w-full bg-primary hover:bg-primary/90"
+                  disabled={uploading}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Sauvegarder l'Événement
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {selectedFile ? 'Upload et sauvegarde...' : 'Sauvegarde...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Sauvegarder l'Événement
+                    </>
+                  )}
                 </Button>
                 <Button variant="outline" onClick={() => setView('list')} className="w-full">
                   Annuler

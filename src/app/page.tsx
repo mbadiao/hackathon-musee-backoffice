@@ -6,10 +6,6 @@ import { Dashboard } from "@/components/Dashboard";
 import { PostsPage } from "@/components/PostsPage";
 import { EventsPage } from "@/components/EventsPage";
 import { ArtworksPage } from "@/components/ArtworksPage";
-import { ExhibitionsPage } from "@/components/ExhibitionsPage";
-import { MediaLibraryPage } from "@/components/MediaLibraryPage";
-import { UserManagementPage } from "@/components/UserManagementPage";
-import { NotificationsPage } from "@/components/NotificationsPage";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
@@ -48,14 +44,6 @@ function AppContent() {
         return <EventsPage onNavigate={handleNavigation} onLogout={handleLogout} />;
       case 'artworks':
         return <ArtworksPage onNavigate={handleNavigation} onLogout={handleLogout} />;
-      case 'exhibitions':
-        return <ExhibitionsPage onNavigate={handleNavigation} onLogout={handleLogout} />;
-      case 'media':
-        return <MediaLibraryPage onNavigate={handleNavigation} onLogout={handleLogout} />;
-      case 'users':
-        return <UserManagementPage onNavigate={handleNavigation} onLogout={handleLogout} />;
-      case 'notifications':
-        return <NotificationsPage onNavigate={handleNavigation} onLogout={handleLogout} />;
       default:
         return <Dashboard onNavigate={handleNavigation} onLogout={handleLogout} />;
     }

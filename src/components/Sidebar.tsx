@@ -6,12 +6,7 @@ import {
   FileText,
   Calendar,
   Camera,
-  BookOpen,
-  Image as ImageIcon,
-  Users,
-  Bell,
-  LogOut,
-  Sparkles
+  LogOut
 } from 'lucide-react';
 import { DarkModeToggle } from './DarkModeToggle';
 import { PageType } from '@/types';
@@ -28,10 +23,6 @@ const sidebarNavItems = [
   { name: 'Articles', page: 'posts' as PageType, icon: FileText },
   { name: 'Événements', page: 'events' as PageType, icon: Calendar },
   { name: 'Œuvres d\'Art', page: 'artworks' as PageType, icon: Camera },
-  { name: 'Expositions', page: 'exhibitions' as PageType, icon: BookOpen },
-  { name: 'Médiathèque', page: 'media' as PageType, icon: ImageIcon },
-  { name: 'Utilisateurs', page: 'users' as PageType, icon: Users },
-  { name: 'Notifications', page: 'notifications' as PageType, icon: Bell },
 ];
 
 export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {

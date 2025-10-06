@@ -1,4 +1,4 @@
-export type PageType = 'dashboard' | 'posts' | 'events' | 'artworks' | 'exhibitions' | 'media' | 'users' | 'notifications';
+export type PageType = 'dashboard' | 'posts' | 'events' | 'artworks';
 
 import { ObjectId } from 'mongodb';
 
