@@ -19,27 +19,27 @@ export async function GET(request: NextRequest) {
     
     // Récupérer les données réelles
     const [
-      postsCount,
+      artworksCount,
       usersCount,
-      postsByCategory,
-      recentPosts,
+      artworksByCategory,
+      recentArtworks,
       recentUsers,
-      postsByMonth
+      artworksByMonth
     ] = await Promise.all([
-      // Nombre total de posts
-      db.collection('posts').countDocuments(),
+      // Nombre total d'artworks
+      db.collection('artworks').countDocuments(),
       
       // Nombre total d'utilisateurs
       db.collection('users').countDocuments(),
       
-      // Posts par catégorie
-      db.collection('posts').aggregate([
+      // Artworks par catégorie
+      db.collection('artworks').aggregate([
         { $group: { _id: '$category', count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]).toArray(),
       
-      // Posts récents (derniers 5)
-      db.collection('posts').find({})
+      // Artworks récents (derniers 5)
+      db.collection('artworks').find({})
         .sort({ createdAt: -1 })
         .limit(5)
         .toArray(),
@@ -50,8 +50,8 @@ export async function GET(request: NextRequest) {
         .limit(3)
         .toArray(),
       
-      // Posts par mois (derniers 12 mois)
-      db.collection('posts').aggregate([
+      // Artworks par mois (derniers 12 mois)
+      db.collection('artworks').aggregate([
         {
           $group: {
             _id: {
@@ -66,40 +66,40 @@ export async function GET(request: NextRequest) {
       ]).toArray()
     ]);
 
-    // Utiliser le nombre de posts comme base pour toutes les analytics
-    const baseVisitors = Math.max(50, postsCount * 8); // Ratio plus conservateur
-    const basePageViews = Math.max(500, postsCount * 80); // Estimation basée sur les posts
+    // Utiliser le nombre d'artworks comme base pour toutes les analytics
+    const baseVisitors = Math.max(50, artworksCount * 8); // Ratio plus conservateur
+    const basePageViews = Math.max(500, artworksCount * 80); // Estimation basée sur les artworks
     
-    // Calculer les tendances basées sur les posts par mois
+    // Calculer les tendances basées sur les artworks par mois
     const currentMonth = new Date().getMonth();
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     
-    const currentMonthPosts = postsByMonth.find(p => p._id.month === currentMonth + 1)?.count || 0;
-    const lastMonthPosts = postsByMonth.find(p => p._id.month === lastMonth + 1)?.count || 0;
+    const currentMonthArtworks = artworksByMonth.find(p => p._id.month === currentMonth + 1)?.count || 0;
+    const lastMonthArtworks = artworksByMonth.find(p => p._id.month === lastMonth + 1)?.count || 0;
     
-    const postsTrend = lastMonthPosts > 0 
-      ? ((currentMonthPosts - lastMonthPosts) / lastMonthPosts * 100).toFixed(1)
-      : currentMonthPosts > 0 ? '100.0' : '0.0';
+    const artworksTrend = lastMonthArtworks > 0 
+      ? ((currentMonthArtworks - lastMonthArtworks) / lastMonthArtworks * 100).toFixed(1)
+      : currentMonthArtworks > 0 ? '100.0' : '0.0';
     
-    // Créer des données mensuelles plus représentatives basées sur les posts
+    // Créer des données mensuelles plus représentatives basées sur les artworks
     const monthlyAnalytics = [];
     const monthNames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
     
-    // Générer 12 mois de données basées sur les posts réels
+    // Générer 12 mois de données basées sur les artworks réels
     for (let i = 0; i < 12; i++) {
-      const monthData = postsByMonth.find(p => p._id.month === i + 1);
-      const postCount = monthData?.count || 0;
+      const monthData = artworksByMonth.find(p => p._id.month === i + 1);
+      const artworkCount = monthData?.count || 0;
       
-      // Calculer les visiteurs basés sur les posts (ratio réaliste)
-      const visitors = Math.max(20, postCount * 8 + Math.floor(Math.random() * 20));
-      const pageViews = Math.max(100, postCount * 80 + Math.floor(Math.random() * 200));
+      // Calculer les visiteurs basés sur les artworks (ratio réaliste)
+      const visitors = Math.max(20, artworkCount * 8 + Math.floor(Math.random() * 20));
+      const pageViews = Math.max(100, artworkCount * 80 + Math.floor(Math.random() * 200));
       
       monthlyAnalytics.push({
         month: i + 1,
         year: 2024,
         visitors: visitors,
         pageViews: pageViews,
-        posts: postCount
+        artworks: artworkCount
       });
     }
 
@@ -109,23 +109,23 @@ export async function GET(request: NextRequest) {
       stats: {
         visitors: {
           value: baseVisitors.toLocaleString('fr-FR'),
-          change: postsTrend + '%',
-          trend: parseFloat(postsTrend) >= 0 ? 'up' : 'down'
+          change: artworksTrend + '%',
+          trend: parseFloat(artworksTrend) >= 0 ? 'up' : 'down'
         },
         artworks: {
-          value: postsCount.toString(),
-          change: postsTrend + '%',
-          trend: parseFloat(postsTrend) >= 0 ? 'up' : 'down'
+          value: artworksCount.toString(),
+          change: artworksTrend + '%',
+          trend: parseFloat(artworksTrend) >= 0 ? 'up' : 'down'
         },
         events: {
-          value: postsByCategory.find(c => c._id === 'Event')?.count || 0,
-          change: postsTrend + '%',
-          trend: parseFloat(postsTrend) >= 0 ? 'up' : 'down'
+          value: artworksByCategory.find(c => c._id === 'Event')?.count || 0,
+          change: artworksTrend + '%',
+          trend: parseFloat(artworksTrend) >= 0 ? 'up' : 'down'
         },
         pageViews: {
           value: Math.floor(basePageViews / 1000) + 'K',
-          change: postsTrend + '%',
-          trend: parseFloat(postsTrend) >= 0 ? 'up' : 'down'
+          change: artworksTrend + '%',
+          trend: parseFloat(artworksTrend) >= 0 ? 'up' : 'down'
         }
       },
       
@@ -136,20 +136,20 @@ export async function GET(request: NextRequest) {
           year: item.year,
           count: item.visitors // Utiliser les visiteurs calculés pour le graphique
         })),
-        categories: postsByCategory.map(item => ({
+        categories: artworksByCategory.map(item => ({
           name: item._id,
           count: item.count,
-          percent: postsCount > 0 ? Math.round((item.count / postsCount) * 100) : 0
+          percent: artworksCount > 0 ? Math.round((item.count / artworksCount) * 100) : 0
         }))
       },
       
       // Activité récente
       recentActivity: [
-        ...recentPosts.map(post => ({
-          type: 'post' as const,
-          title: post.title,
-          time: getTimeAgo(post.createdAt),
-          user: post.author || 'Admin'
+        ...recentArtworks.map(artwork => ({
+          type: 'artwork' as const,
+          title: artwork.title,
+          time: getTimeAgo(artwork.createdAt),
+          user: artwork.artist || 'Admin'
         })),
         ...recentUsers.map(user => ({
           type: 'user' as const,
@@ -160,18 +160,18 @@ export async function GET(request: NextRequest) {
       ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5),
       
       // Top expositions (basées sur les catégories)
-      topExhibitions: postsByCategory.slice(0, 3).map(item => ({
+      topExhibitions: artworksByCategory.slice(0, 3).map(item => ({
         name: item._id,
         views: Math.floor(item.count * 12.5) + 'K' // Estimation réaliste
       })),
       
-      // Événements à venir (posts de catégorie Event)
-      upcomingEvents: recentPosts
-        .filter(post => post.category === 'Event')
+      // Événements à venir
+      upcomingEvents: recentArtworks
+        .filter(artwork => artwork.category === 'Event')
         .slice(0, 3)
-        .map(post => ({
-          date: formatEventDate(post.createdAt),
-          name: post.title
+        .map(artwork => ({
+          date: formatEventDate(artwork.createdAt),
+          name: artwork.title
         }))
     };
 

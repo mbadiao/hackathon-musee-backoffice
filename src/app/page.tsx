@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LoginForm } from "@/components/LoginForm";
 import { Dashboard } from "@/components/Dashboard";
-import { PostsPage } from "@/components/PostsPage";
 import { EventsPage } from "@/components/EventsPage";
 import { ArtworksPage } from "@/components/ArtworksPage";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -16,7 +15,7 @@ function AppContentInner() {
   const { isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
+  const [currentPage, setCurrentPage] = useState<PageType>('artworks');
 
   // Initialiser la page depuis l'URL ou localStorage
   useEffect(() => {
@@ -24,17 +23,20 @@ function AppContentInner() {
       const pageFromUrl = searchParams.get('page') as PageType;
       const savedPage = localStorage.getItem('currentPage') as PageType;
       
-      if (pageFromUrl && ['dashboard', 'posts', 'events', 'artworks'].includes(pageFromUrl)) {
+      if (pageFromUrl && ['dashboard', 'events', 'artworks'].includes(pageFromUrl)) {
         setCurrentPage(pageFromUrl);
-      } else if (savedPage && ['dashboard', 'posts', 'events', 'artworks'].includes(savedPage)) {
+      } else if (savedPage && ['dashboard', 'events', 'artworks'].includes(savedPage)) {
         setCurrentPage(savedPage);
+      } else {
+        // Si aucune page n'est spécifiée, rediriger vers artworks
+        setCurrentPage('artworks');
       }
     }
   }, [isAuthenticated, searchParams]);
 
   const handleLogout = async () => {
     await logout();
-    setCurrentPage('dashboard');
+    setCurrentPage('artworks');
     localStorage.removeItem('currentPage');
   };
 
@@ -61,8 +63,6 @@ function AppContentInner() {
 
   const renderCurrentPage = () => {
     switch (currentPage) {
-      case 'posts':
-        return <PostsPage onNavigate={handleNavigation} onLogout={handleLogout} />;
       case 'events':
         return <EventsPage onNavigate={handleNavigation} onLogout={handleLogout} />;
       case 'artworks':

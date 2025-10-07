@@ -269,7 +269,7 @@ export function Dashboard({ onNavigate, onLogout }: DashboardProps) {
                   Vue d'ensemble de votre musée
                   {dashboardData ? (
                     <span className="ml-2 px-2 py-1 text-xs bg-success/10 text-success rounded-full">
-                      Analytics basées sur les posts
+                      Analytics basées sur les œuvres
                     </span>
                   ) : (
                     <span className="ml-2 px-2 py-1 text-xs bg-warning/10 text-warning rounded-full">
@@ -342,7 +342,7 @@ export function Dashboard({ onNavigate, onLogout }: DashboardProps) {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-xl">Analytiques des Visiteurs</CardTitle>
-                    <CardDescription className="mt-1">Basé sur l'activité des posts ({data.stats.artworks.value} posts)</CardDescription>
+                    <CardDescription className="mt-1">Basé sur l'activité des œuvres ({data.stats.artworks.value} œuvres)</CardDescription>
                   </div>
                   <button className="p-2 rounded-lg hover:bg-muted smooth-transition">
                     <MoreVertical className="w-5 h-5 text-muted-foreground" />
@@ -350,7 +350,7 @@ export function Dashboard({ onNavigate, onLogout }: DashboardProps) {
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Graphique avec des barres basé sur les analytics des posts */}
+                {/* Graphique avec des barres basé sur les analytics des œuvres */}
                 <div className="h-64 flex items-end justify-between gap-2 px-4">
                   {data.charts.monthlyData.length > 0 ? (
                     data.charts.monthlyData.map((item, i) => {
@@ -363,7 +363,7 @@ export function Dashboard({ onNavigate, onLogout }: DashboardProps) {
                           <div 
                             className="w-full bg-primary rounded-t-lg animate-slide-in hover:bg-accent smooth-transition cursor-pointer" 
                             style={{height: `${height}%`}}
-                            title={`${item.count} visiteurs estimés en ${monthNames[item.month - 1]} ${item.year} (basé sur l'activité des posts)`}
+                            title={`${item.count} visiteurs estimés en ${monthNames[item.month - 1]} ${item.year} (basé sur l'activité des œuvres)`}
                           ></div>
                           <span className="text-xs text-muted-foreground font-medium">
                             {monthNames[item.month - 1]}

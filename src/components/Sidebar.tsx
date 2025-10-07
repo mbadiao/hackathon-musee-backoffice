@@ -3,7 +3,6 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { 
   Home,
-  FileText,
   Calendar,
   Camera,
   LogOut
@@ -20,7 +19,6 @@ interface SidebarProps {
 
 const sidebarNavItems = [
   { name: 'Tableau de Bord', page: 'dashboard' as PageType, icon: Home },
-  { name: 'Articles', page: 'posts' as PageType, icon: FileText },
   { name: 'Événements', page: 'events' as PageType, icon: Calendar },
   { name: 'Œuvres d\'Art', page: 'artworks' as PageType, icon: Camera },
 ];

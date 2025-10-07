@@ -1,4 +1,4 @@
-export type PageType = 'dashboard' | 'posts' | 'events' | 'artworks' | 'exhibitions';
+export type PageType = 'dashboard' | 'events' | 'artworks' | 'exhibitions';
 
 import { ObjectId } from 'mongodb';
 
@@ -27,18 +27,6 @@ export interface LoginResponse {
     permissions: string[];
   };
   token?: string;
-}
-
-export interface Post {
-  _id?: string;
-  title: string;
-  author: string;
-  content: string;
-  images: string[]; // Jusqu'à 3 images
-  category: string;
-  status: 'draft' | 'published';
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface Event {
