@@ -8,6 +8,16 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Musée Admin Portal',
   description: 'Administration dashboard for museum collections management',
+  icons: {
+    icon: [
+      {
+        url: '/icon.png',
+        type: 'image/png',
+      },
+    ],
+    shortcut: '/icon.png',
+    apple: '/icon.png',
+  },
 }
 
 export default function RootLayout({
