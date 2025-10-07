@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Search, Plus, Edit, Trash2, Save, Upload, ArrowLeft, Loader2, X, 
   AlertTriangle, Image as ImageIcon, Music, Palette, FileText, 
-  Heading1, AlignLeft, GripVertical, ChevronUp, ChevronDown, Languages, Layers
+  Heading1, AlignLeft, GripVertical, ChevronUp, ChevronDown, Languages, Layers, QrCode, Printer
 } from "lucide-react";
+import { QRCodeSVG } from 'qrcode.react';
 import { PageType, Artwork, Exhibition } from "@/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -24,6 +25,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 import {
   Select,
   SelectContent,
@@ -69,6 +77,8 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
   const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
   const [artworkToDelete, setArtworkToDelete] = useState<string | null>(null);
+  const [qrCodeArtwork, setQrCodeArtwork] = useState<{ artwork: Artwork; exhibition: Exhibition | null } | null>(null);
+  const qrCodeRef = useRef<HTMLDivElement>(null);
 
   // Form state
   const [formData, setFormData] = useState<FormData>({
@@ -396,6 +406,77 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
     }
   };
 
+  // Générer l'URL de l'artwork pour le QR code
+  const getArtworkUrl = (artwork: Artwork, exhibition: Exhibition | null) => {
+    const baseUrl = 'https://hackathon-musee.vercel.app';
+    if (exhibition) {
+      return `${baseUrl}/exhibition/${exhibition.slug}/artwork/${artwork.slug}`;
+    }
+    return `${baseUrl}/artwork/${artwork.slug}`;
+  };
+
+  // Ouvrir le QR code modal
+  const handleShowQrCode = (artwork: Artwork) => {
+    const exhibition = exhibitions.find(ex => ex._id === artwork.exhibition) || null;
+    setQrCodeArtwork({ artwork, exhibition });
+  };
+
+  // Imprimer le QR code
+  const handlePrintQrCode = () => {
+    if (qrCodeRef.current) {
+      const printWindow = window.open('', '', 'width=800,height=600');
+      if (printWindow) {
+        const qrCodeHtml = qrCodeRef.current.innerHTML;
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>QR Code - ${qrCodeArtwork?.artwork.title}</title>
+              <style>
+                body {
+                  font-family: system-ui, -apple-system, sans-serif;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  min-height: 100vh;
+                  margin: 0;
+                  padding: 20px;
+                }
+                .qr-container {
+                  text-align: center;
+                }
+                h1 {
+                  font-size: 24px;
+                  margin-bottom: 20px;
+                  color: #333;
+                }
+                .url {
+                  margin-top: 20px;
+                  font-size: 12px;
+                  color: #666;
+                  word-break: break-all;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="qr-container">
+                <h1>${qrCodeArtwork?.artwork.title}</h1>
+                ${qrCodeHtml}
+                <div class="url">${qrCodeArtwork ? getArtworkUrl(qrCodeArtwork.artwork, qrCodeArtwork.exhibition) : ''}</div>
+              </div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
+      }
+    }
+  };
+
   // === RENDER LIST VIEW ===
   const renderListView = () => (
     <div className="space-y-6 animate-fade-in">
@@ -505,6 +586,15 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
                   </div>
 
                   <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleShowQrCode(artwork)}
+                      className="h-8 w-8 p-0 hover:bg-purple-500/10 hover:text-purple-600"
+                      title="Voir le QR Code"
+                    >
+                      <QrCode className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1100,6 +1190,68 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal QR Code */}
+      <Dialog open={!!qrCodeArtwork} onOpenChange={(open: boolean) => !open && setQrCodeArtwork(null)}>
+        <DialogContent className="sm:max-w-md border-0 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-purple-500/10">
+                <QrCode className="w-5 h-5 text-purple-600" />
+              </div>
+              QR Code de l'œuvre
+            </DialogTitle>
+            <DialogDescription>
+              Scannez ce QR code pour accéder directement à la page de l'œuvre sur le site du musée
+            </DialogDescription>
+          </DialogHeader>
+          
+          {qrCodeArtwork && (
+            <div className="space-y-4">
+              {/* QR Code */}
+              <div ref={qrCodeRef} className="flex flex-col items-center justify-center p-6 bg-white rounded-lg">
+                <QRCodeSVG
+                  value={getArtworkUrl(qrCodeArtwork.artwork, qrCodeArtwork.exhibition)}
+                  size={256}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+
+              {/* Infos de l'œuvre */}
+              <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
+                <h4 className="font-semibold text-foreground">{qrCodeArtwork.artwork.title}</h4>
+                {qrCodeArtwork.exhibition && (
+                  <p className="text-sm text-muted-foreground">
+                    Exposition : {qrCodeArtwork.exhibition.title}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground font-mono break-all">
+                  {getArtworkUrl(qrCodeArtwork.artwork, qrCodeArtwork.exhibition)}
+                </p>
+              </div>
+
+              {/* Boutons d'action */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={handlePrintQrCode}
+                  className="flex-1 bg-primary hover:bg-primary-hover"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Imprimer
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setQrCodeArtwork(null)}
+                  className="flex-1"
+                >
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
