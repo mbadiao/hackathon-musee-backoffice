@@ -11,6 +11,7 @@ import { Label } from "./ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Sidebar } from "./Sidebar";
+import { MobileNav } from "./MobileNav";
 import { toast } from "sonner";
 
 interface EventsPageProps {
@@ -778,16 +779,17 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <header className="bg-card border-b border-border p-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-foreground">
+        <header className="bg-card border-b border-border p-4 sm:p-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <MobileNav currentPage="events" onNavigate={onNavigate} onLogout={onLogout} />
+            <h2 className="text-base sm:text-lg font-medium text-foreground">
               Events Management
             </h2>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {view === 'list' ? renderListView() : renderCreateEditView()}
         </main>
       </div>

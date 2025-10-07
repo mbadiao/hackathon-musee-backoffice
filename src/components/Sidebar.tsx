@@ -25,7 +25,7 @@ const sidebarNavItems = [
 
 export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
   return (
-    <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col animate-slide-in-left">
+    <aside className="hidden lg:flex w-64 bg-sidebar border-r border-sidebar-border flex-col animate-slide-in-left">
       {/* Logo et titre - design épuré avec logo du musée */}
       <div className="px-6 py-8">
         <div className="flex items-center gap-3 group cursor-pointer">

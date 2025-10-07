@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
+import { MobileNav } from './MobileNav';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { 
   TrendingUp, 
@@ -257,17 +258,19 @@ export function Dashboard({ onNavigate, onLogout }: DashboardProps) {
       <Sidebar currentPage="dashboard" onNavigate={onNavigate} onLogout={onLogout} />
       
       <main className="flex-1 overflow-y-auto">
-        {/* Header moderne */}
+        {/* Header moderne avec menu mobile */}
         <div className="bg-card border-b border-border sticky top-0 z-10 backdrop-blur-xl bg-card/80">
-          <div className="px-8 py-6">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground mb-1">
-                  Tableau de Bord
-                </h1>
-                <p className="text-muted-foreground">
-                  Vue d'ensemble de votre musée
-                  {dashboardData ? (
+              <div className="flex items-center gap-3 sm:gap-4">
+                <MobileNav currentPage="dashboard" onNavigate={onNavigate} onLogout={onLogout} />
+                <div>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-1">
+                    Tableau de Bord
+                  </h1>
+                  <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">
+                    Vue d'ensemble de votre musée
+                    {dashboardData ? (
                     <span className="ml-2 px-2 py-1 text-xs bg-success/10 text-success rounded-full">
                       Analytics basées sur les œuvres
                     </span>
@@ -278,18 +281,19 @@ export function Dashboard({ onNavigate, onLogout }: DashboardProps) {
                   )}
                 </p>
               </div>
-              <div className="flex items-center gap-3">
+              </div>
+              <div className="hidden sm:flex items-center gap-3">
                 <button 
                   onClick={handleRefresh}
                   disabled={refreshing}
-                  className="px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 text-sm font-medium smooth-transition flex items-center gap-2 disabled:opacity-50"
+                  className="px-3 sm:px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 text-sm font-medium smooth-transition flex items-center gap-2 disabled:opacity-50"
                 >
                   <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                  Actualiser
+                  <span className="hidden lg:inline">Actualiser</span>
                 </button>
-                <button className="px-4 py-2 rounded-lg bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium shadow-primary smooth-transition flex items-center gap-2">
+                <button className="px-3 sm:px-4 py-2 rounded-lg bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium shadow-primary smooth-transition flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
-                  Exporter
+                  <span className="hidden lg:inline">Exporter</span>
                 </button>
               </div>
             </div>
@@ -297,9 +301,9 @@ export function Dashboard({ onNavigate, onLogout }: DashboardProps) {
         </div>
 
         {/* Contenu principal avec grid moderne */}
-        <div className="p-8 space-y-8">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
           {/* Statistiques principales - Grid responsive */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <StatCard
               title="Total Visiteurs"
               value={data.stats.visitors.value}

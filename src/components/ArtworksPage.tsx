@@ -14,6 +14,7 @@ import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Sidebar } from "./Sidebar";
+import { MobileNav } from "./MobileNav";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -1150,14 +1151,17 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <header className="bg-card border-b border-border sticky top-0 z-10 backdrop-blur-xl bg-card/80">
-          <div className="px-8 py-6">
-            <h2 className="text-lg font-semibold text-foreground">
-              Gestion des Artworks
-            </h2>
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <MobileNav currentPage="artworks" onNavigate={onNavigate} onLogout={onLogout} />
+              <h2 className="text-base sm:text-lg font-semibold text-foreground">
+                Gestion des Artworks
+              </h2>
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {view === 'list' ? renderListView() : renderCreateEditView()}
         </main>
       </div>

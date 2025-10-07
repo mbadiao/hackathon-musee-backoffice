@@ -295,3 +295,45 @@ html {
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+/* Classes responsive utilities */
+@layer utilities {
+  .container-responsive {
+    @apply w-full mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .text-responsive {
+    @apply text-sm sm:text-base;
+  }
+  
+  .heading-responsive {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+  
+  .card-grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
+  }
+  
+  .stats-grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6;
+  }
+  
+  /* Touch-friendly buttons on mobile */
+  .btn-touch {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  /* Hide on mobile/tablet/desktop */
+  .mobile-only {
+    @apply block sm:hidden;
+  }
+  
+  .tablet-up {
+    @apply hidden sm:block;
+  }
+  
+  .desktop-only {
+    @apply hidden lg:block;
+  }
+}
+
