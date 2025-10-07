@@ -34,7 +34,7 @@ export async function PUT(
     const { id } = await params;
 
     const body = await request.json();
-    const { title, description, image, audioUrls, gallery } = body;
+    const { title, description, image, audioUrls, gallery, exhibition } = body;
 
     if (!title || !description || !image) {
       return NextResponse.json(
@@ -62,6 +62,7 @@ export async function PUT(
 
     const db = await getDatabase();
     const artworksCollection = db.collection('artworks');
+    const exhibitionsCollection = db.collection('exhibitions');
 
     // Récupérer l'artwork actuelle
     const currentArtwork = await artworksCollection.findOne({
@@ -98,6 +99,29 @@ export async function PUT(
       }
     }
 
+    // MISE À JOUR BIDIRECTIONNELLE: Gérer les changements d'exhibition
+    const oldExhibitionId = currentArtwork.exhibition;
+    const newExhibitionId = exhibition && ObjectId.isValid(exhibition) ? exhibition : null;
+
+    // Si l'exhibition a changé
+    if (oldExhibitionId !== newExhibitionId) {
+      // Retirer l'artwork de l'ancienne exhibition
+      if (oldExhibitionId && ObjectId.isValid(oldExhibitionId)) {
+        await exhibitionsCollection.updateOne(
+          { _id: new ObjectId(oldExhibitionId) },
+          { $pull: { artworks: id as any } }
+        );
+      }
+
+      // Ajouter l'artwork à la nouvelle exhibition
+      if (newExhibitionId) {
+        await exhibitionsCollection.updateOne(
+          { _id: new ObjectId(newExhibitionId) },
+          { $addToSet: { artworks: id } }
+        );
+      }
+    }
+
     const updatedArtwork = {
       slug,
       title,
@@ -105,6 +129,7 @@ export async function PUT(
       image,
       audioUrls: audioUrls || { en: '', fr: '', wo: '' },
       gallery: Array.isArray(gallery) ? gallery : [],
+      exhibition: newExhibitionId || undefined,
       updatedAt: new Date(),
     };
 
@@ -144,6 +169,27 @@ export async function DELETE(
 
     const db = await getDatabase();
     const artworksCollection = db.collection('artworks');
+    const exhibitionsCollection = db.collection('exhibitions');
+
+    // Récupérer l'artwork pour obtenir son exhibition
+    const artwork = await artworksCollection.findOne({
+      _id: new ObjectId(id),
+    });
+
+    if (!artwork) {
+      return NextResponse.json(
+        { success: false, message: 'Artwork non trouvée' },
+        { status: 404 }
+      );
+    }
+
+    // MISE À JOUR BIDIRECTIONNELLE: Retirer l'artwork de son exhibition
+    if (artwork.exhibition && ObjectId.isValid(artwork.exhibition)) {
+      await exhibitionsCollection.updateOne(
+        { _id: new ObjectId(artwork.exhibition) },
+        { $pull: { artworks: id as any } }
+      );
+    }
 
     const result = await artworksCollection.deleteOne({
       _id: new ObjectId(id),

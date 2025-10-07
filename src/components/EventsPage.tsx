@@ -546,7 +546,7 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                   <Label htmlFor="category">Category</Label>
                   <Select 
                     value={formData.category} 
-                    onValueChange={(value) => setFormData({...formData, category: value})}
+                    onValueChange={(value:string) => setFormData({...formData, category: value})}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -684,7 +684,7 @@ export function EventsPage({ onNavigate, onLogout }: EventsPageProps) {
                 <Label htmlFor="relatedExhibition">Lier à une Exposition</Label>
                 <Select 
                   value={formData.relatedExhibition} 
-                  onValueChange={(value) => setFormData({...formData, relatedExhibition: value})}
+                  onValueChange={(value:string) => setFormData({...formData, relatedExhibition: value})}
                 >
                   <SelectTrigger>
                     <SelectValue />

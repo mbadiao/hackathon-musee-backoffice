@@ -1,4 +1,4 @@
-export type PageType = 'dashboard' | 'posts' | 'events' | 'artworks';
+export type PageType = 'dashboard' | 'posts' | 'events' | 'artworks' | 'exhibitions';
 
 import { ObjectId } from 'mongodb';
 
@@ -70,6 +70,18 @@ export interface Artwork {
     wo?: string;
   };
   gallery: { url: string; alt: string }[];
+  exhibition?: string; // ObjectId reference to Exhibition
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export interface Exhibition {
+  _id?: string;
+  slug: string; // auto-generated from title (lowercase, hyphenated)
+  title: string;
+  subtitle: string;
+  image: string;
+  artworks: string[]; // Array of ObjectId references to Artwork
   createdAt: Date;
   updatedAt?: Date;
 }

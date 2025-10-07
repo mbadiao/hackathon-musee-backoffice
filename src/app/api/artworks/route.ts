@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { verifyToken } from '@/lib/auth';
+import { ObjectId } from 'mongodb';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, image, audioUrls, gallery } = body;
+    const { title, description, image, audioUrls, gallery, exhibition } = body;
 
     // Validation
     if (!title || !description || !image) {
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
 
     const db = await getDatabase();
     const artworksCollection = db.collection('artworks');
+    const exhibitionsCollection = db.collection('exhibitions');
 
     // Générer le slug
     let slug = generateSlug(title);
@@ -129,15 +131,25 @@ export async function POST(request: NextRequest) {
       image,
       audioUrls: audioUrls || { en: '', fr: '', wo: '' },
       gallery: Array.isArray(gallery) ? gallery : [],
+      exhibition: exhibition && ObjectId.isValid(exhibition) ? exhibition : undefined,
       createdAt: new Date(),
     };
 
     const result = await artworksCollection.insertOne(newArtwork);
+    const artworkId = result.insertedId.toString();
+
+    // MISE À JOUR BIDIRECTIONNELLE: Ajouter l'artwork à l'exhibition
+    if (exhibition && ObjectId.isValid(exhibition)) {
+      await exhibitionsCollection.updateOne(
+        { _id: new ObjectId(exhibition) },
+        { $addToSet: { artworks: artworkId } }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Artwork créée avec succès',
-      artwork: { ...newArtwork, _id: result.insertedId },
+      artwork: { ...newArtwork, _id: artworkId },
     });
   } catch (error: any) {
     console.error('Erreur lors de la création de l\'artwork:', error);

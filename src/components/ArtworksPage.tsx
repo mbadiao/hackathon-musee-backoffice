@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { 
   Search, Plus, Edit, Trash2, Save, Upload, ArrowLeft, Loader2, X, 
   AlertTriangle, Image as ImageIcon, Music, Palette, FileText, 
-  Heading1, AlignLeft, GripVertical, ChevronUp, ChevronDown, Languages
+  Heading1, AlignLeft, GripVertical, ChevronUp, ChevronDown, Languages, Layers
 } from "lucide-react";
-import { PageType, Artwork } from "@/types";
+import { PageType, Artwork, Exhibition } from "@/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -57,10 +57,12 @@ interface FormData {
     wo: string;
   };
   gallery: GalleryImage[];
+  exhibition: string;
 }
 
 export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -78,7 +80,8 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
       fr: '',
       wo: ''
     },
-    gallery: []
+    gallery: [],
+    exhibition: ''
   });
 
   // Upload states
@@ -97,6 +100,7 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
   // Charger les artworks depuis l'API
   useEffect(() => {
     fetchArtworks();
+    fetchExhibitions();
   }, []);
 
   const fetchArtworks = async () => {
@@ -119,6 +123,23 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
     }
   };
 
+  const fetchExhibitions = async () => {
+    try {
+      const response = await fetch('/api/exhibitions', {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (data.success) {
+        setExhibitions(data.exhibitions);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des exhibitions:', error);
+      toast.error('Erreur', {
+        description: 'Impossible de charger les exhibitions'
+      });
+    }
+  };
+
   const filteredArtworks = artworks.filter(artwork => 
     artwork.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     artwork.slug.toLowerCase().includes(searchTerm.toLowerCase())
@@ -130,7 +151,8 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
       description: [{ type: 'heading', content: '' }],
       image: '',
       audioUrls: { en: '', fr: '', wo: '' },
-      gallery: []
+      gallery: [],
+      exhibition: ''
     });
     setMainImageFile(null);
     setAudioFiles({ en: null, fr: null, wo: null });
@@ -149,7 +171,8 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
         fr: artwork.audioUrls.fr || '',
         wo: artwork.audioUrls.wo || ''
       },
-      gallery: artwork.gallery
+      gallery: artwork.gallery,
+      exhibition: artwork.exhibition || ''
     });
     setMainImageFile(null);
     setAudioFiles({ en: null, fr: null, wo: null });
@@ -293,7 +316,8 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
         description: formData.description.filter(b => b.content.trim()),
         image: imageUrl,
         audioUrls,
-        gallery: [...formData.gallery, ...newGalleryImages]
+        gallery: [...formData.gallery, ...newGalleryImages],
+        exhibition: formData.exhibition || undefined
       };
 
       // Créer ou mettre à jour
@@ -959,6 +983,37 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
                   </>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Exhibition */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Layers className="w-5 h-5" />
+                Exhibition
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select
+                value={formData.exhibition || 'none'}
+                onValueChange={(value: string) => setFormData({ 
+                  ...formData, 
+                  exhibition: value === 'none' ? '' : value 
+                })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une exhibition" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucune exhibition</SelectItem>
+                  {exhibitions.map((exhibition) => (
+                    <SelectItem key={exhibition._id} value={exhibition._id || 'none'}>
+                      {exhibition.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
 

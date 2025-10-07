@@ -25,11 +25,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier le type de fichier
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-    if (!allowedTypes.includes(file.type)) {
+    // Vérifier le type de fichier (par MIME type et extension)
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    // Log pour déboguer
+    console.log('File upload debug:', {
+      fileName: file.name,
+      fileType: file.type,
+      fileExtension: fileExtension,
+      fileSize: file.size
+    });
+    
+    const isValidMimeType = allowedMimeTypes.includes(file.type);
+    const isValidExtension = allowedExtensions.includes(fileExtension);
+    
+    console.log('Validation:', { isValidMimeType, isValidExtension });
+    
+    if (!isValidMimeType && !isValidExtension) {
       return NextResponse.json(
-        { success: false, message: 'Type de fichier non autorisé. Utilisez JPG, PNG ou WEBP.' },
+        { success: false, message: `Type de fichier non autorisé. Fichier: ${file.name}, Type MIME: ${file.type}, Extension: ${fileExtension}. Utilisez JPG, JPEG, PNG ou WEBP.` },
         { status: 400 }
       );
     }
