@@ -57,3 +57,19 @@ export interface Event {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface Artwork {
+  _id?: string;
+  slug: string; // auto-generated from title (lowercase, hyphenated)
+  title: string;
+  description: { type: "heading" | "paragraph"; content: string }[];
+  image: string;
+  audioUrls: {
+    en?: string;
+    fr?: string;
+    wo?: string;
+  };
+  gallery: { url: string; alt: string }[];
+  createdAt: Date;
+  updatedAt?: Date;
+}

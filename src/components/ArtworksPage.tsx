@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, Edit, Trash2, Save, Upload, Palette, Clock, Eye, LayoutGrid, ArrowLeft, Loader2, X, Bookmark, MoreVertical, AlertTriangle } from "lucide-react";
-import { PageType } from "@/types";
+import { 
+  Search, Plus, Edit, Trash2, Save, Upload, ArrowLeft, Loader2, X, 
+  AlertTriangle, Image as ImageIcon, Music, Palette, FileText, 
+  Heading1, AlignLeft, GripVertical, ChevronUp, ChevronDown, Languages
+} from "lucide-react";
+import { PageType, Artwork } from "@/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Sidebar } from "./Sidebar";
 import { toast } from "sonner";
@@ -22,184 +24,318 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-
-interface Artwork {
-  id: string;
-  name: string;
-  artist: string;
-  year: string;
-  description: string;
-  image: string;
-  exhibition: string;
-  medium: string;
-  dimensions: string;
-  acquisitionDate: string;
-  status: 'on-display' | 'in-storage' | 'on-loan' | 'conservation';
-}
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 interface ArtworksPageProps {
   onNavigate: (page: PageType) => void;
   onLogout: () => void;
 }
 
+interface DescriptionBlock {
+  type: "heading" | "paragraph";
+  content: string;
+}
+
+interface GalleryImage {
+  url: string;
+  alt: string;
+}
+
+interface FormData {
+  title: string;
+  description: DescriptionBlock[];
+  image: string;
+  audioUrls: {
+    en: string;
+    fr: string;
+    wo: string;
+  };
+  gallery: GalleryImage[];
+}
+
 export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [artworkToDelete, setArtworkToDelete] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-  const [exhibitions] = useState([
-    'Voix Africaines Contemporaines',
-    'Royaumes Anciens d\'Afrique de l\'Ouest',
-    'Art Sénégalais Moderne',
-    'Artéfacts Coloniaux',
-    'Non Assigné'
-  ]);
-
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterExhibition, setFilterExhibition] = useState('all');
   const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    artist: '',
-    year: '',
-    description: '',
+  const [artworkToDelete, setArtworkToDelete] = useState<string | null>(null);
+
+  // Form state
+  const [formData, setFormData] = useState<FormData>({
+    title: '',
+    description: [{ type: 'heading', content: '' }],
     image: '',
-    exhibition: 'Non Assigné',
-    medium: '',
-    dimensions: '',
-    acquisitionDate: ''
+    audioUrls: {
+      en: '',
+      fr: '',
+      wo: ''
+    },
+    gallery: []
   });
 
-  // Charger les œuvres d'art au montage du composant
+  // Upload states
+  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+  const [audioFiles, setAudioFiles] = useState<{
+    en: File | null;
+    fr: File | null;
+    wo: File | null;
+  }>({
+    en: null,
+    fr: null,
+    wo: null
+  });
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+
+  // Charger les artworks depuis l'API
   useEffect(() => {
-    // Pour l'instant, on utilise des données statiques
-    // Plus tard, on pourra connecter à une API
-    setLoading(false);
+    fetchArtworks();
   }, []);
 
-  const filteredArtworks = artworks.filter(artwork => {
-    const matchesSearch = artwork.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         artwork.artist.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || artwork.status === filterStatus;
-    const matchesExhibition = filterExhibition === 'all' || artwork.exhibition === filterExhibition;
-    return matchesSearch && matchesStatus && matchesExhibition;
-  });
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const file = files[0]; // Une seule image pour les œuvres d'art
-    setSelectedFile(file);
-    
-    // Reset l'input pour permettre la sélection du même fichier
-    e.target.value = '';
+  const fetchArtworks = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/artworks', {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (data.success) {
+        setArtworks(data.artworks);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des artworks:', error);
+      toast.error('Erreur', {
+        description: 'Impossible de charger les artworks'
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRemoveSelectedFile = () => {
-    setSelectedFile(null);
-  };
+  const filteredArtworks = artworks.filter(artwork => 
+    artwork.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    artwork.slug.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleCreateArtwork = () => {
     setFormData({
-      name: '',
-      artist: '',
-      year: '',
-      description: '',
+      title: '',
+      description: [{ type: 'heading', content: '' }],
       image: '',
-      exhibition: 'Non Assigné',
-      medium: '',
-      dimensions: '',
-      acquisitionDate: ''
+      audioUrls: { en: '', fr: '', wo: '' },
+      gallery: []
     });
-    setSelectedFile(null);
+    setMainImageFile(null);
+    setAudioFiles({ en: null, fr: null, wo: null });
+    setGalleryFiles([]);
     setSelectedArtwork(null);
     setView('create');
   };
 
   const handleEditArtwork = (artwork: Artwork) => {
     setFormData({
-      name: artwork.name,
-      artist: artwork.artist,
-      year: artwork.year,
+      title: artwork.title,
       description: artwork.description,
       image: artwork.image,
-      exhibition: artwork.exhibition,
-      medium: artwork.medium,
-      dimensions: artwork.dimensions,
-      acquisitionDate: artwork.acquisitionDate
+      audioUrls: {
+        en: artwork.audioUrls.en || '',
+        fr: artwork.audioUrls.fr || '',
+        wo: artwork.audioUrls.wo || ''
+      },
+      gallery: artwork.gallery
     });
-    setSelectedFile(null);
+    setMainImageFile(null);
+    setAudioFiles({ en: null, fr: null, wo: null });
+    setGalleryFiles([]);
     setSelectedArtwork(artwork);
     setView('edit');
   };
 
+  // === GESTION DES BLOCS DE DESCRIPTION ===
+  const addDescriptionBlock = (type: "heading" | "paragraph") => {
+    setFormData(prev => ({
+      ...prev,
+      description: [...prev.description, { type, content: '' }]
+    }));
+  };
+
+  const updateDescriptionBlock = (index: number, content: string) => {
+    setFormData(prev => ({
+      ...prev,
+      description: prev.description.map((block, i) => 
+        i === index ? { ...block, content } : block
+      )
+    }));
+  };
+
+  const removeDescriptionBlock = (index: number) => {
+    if (formData.description.length === 1) {
+      toast.error('Erreur', {
+        description: 'Au moins un bloc de description est requis'
+      });
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      description: prev.description.filter((_, i) => i !== index)
+    }));
+  };
+
+  const moveDescriptionBlock = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= formData.description.length) return;
+
+    setFormData(prev => {
+      const newDescription = [...prev.description];
+      [newDescription[index], newDescription[newIndex]] = [newDescription[newIndex], newDescription[index]];
+      return { ...prev, description: newDescription };
+    });
+  };
+
+  // === UPLOAD HANDLERS ===
+  const handleMainImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setMainImageFile(e.target.files[0]);
+    }
+  };
+
+  const handleAudioFileSelect = (lang: 'en' | 'fr' | 'wo', e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAudioFiles(prev => ({ ...prev, [lang]: e.target.files![0] }));
+    }
+  };
+
+  const handleGalleryFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setGalleryFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+    }
+  };
+
+  const removeGalleryFile = (index: number) => {
+    setGalleryFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingGalleryImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      gallery: prev.gallery.filter((_, i) => i !== index)
+    }));
+  };
+
+  // === UPLOAD VERS SUPABASE ===
+  const uploadFile = async (file: File): Promise<string> => {
+    const formDataToSend = new FormData();
+    formDataToSend.append('file', file);
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      credentials: 'include',
+      body: formDataToSend,
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.message || 'Upload failed');
+    }
+    return data.url;
+  };
+
+  // === SAUVEGARDE ===
   const handleSaveArtwork = async () => {
+    // Validation
+    if (!formData.title.trim()) {
+      toast.error('Erreur', { description: 'Le titre est requis' });
+      return;
+    }
+
+    if (formData.description.length === 0 || !formData.description.some(b => b.content.trim())) {
+      toast.error('Erreur', { description: 'Au moins un bloc de description avec du contenu est requis' });
+      return;
+    }
+
+    if (!formData.image && !mainImageFile) {
+      toast.error('Erreur', { description: 'Une image principale est requise' });
+      return;
+    }
+
     try {
       setUploading(true);
-      
-      // Upload du fichier sélectionné s'il y en a un
-      let imageUrl = formData.image;
-      if (selectedFile) {
-        const formDataToSend = new FormData();
-        formDataToSend.append('file', selectedFile);
 
-        const response = await fetch('/api/upload', {
-          method: 'POST',
+      // Upload de l'image principale si nécessaire
+      let imageUrl = formData.image;
+      if (mainImageFile) {
+        imageUrl = await uploadFile(mainImageFile);
+      }
+
+      // Upload des fichiers audio
+      const audioUrls = { ...formData.audioUrls };
+      if (audioFiles.en) audioUrls.en = await uploadFile(audioFiles.en);
+      if (audioFiles.fr) audioUrls.fr = await uploadFile(audioFiles.fr);
+      if (audioFiles.wo) audioUrls.wo = await uploadFile(audioFiles.wo);
+
+      // Upload des images de galerie
+      const newGalleryImages: GalleryImage[] = [];
+      for (const file of galleryFiles) {
+        const url = await uploadFile(file);
+        newGalleryImages.push({ url, alt: file.name });
+      }
+
+      // Préparer les données finales
+      const artworkData = {
+        title: formData.title.trim(),
+        description: formData.description.filter(b => b.content.trim()),
+        image: imageUrl,
+        audioUrls,
+        gallery: [...formData.gallery, ...newGalleryImages]
+      };
+
+      // Créer ou mettre à jour
+      if (selectedArtwork && selectedArtwork._id) {
+        const response = await fetch(`/api/artworks/${selectedArtwork._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: formDataToSend,
+          body: JSON.stringify(artworkData),
         });
 
         const data = await response.json();
         if (data.success) {
-          imageUrl = data.url;
-        } else {
-          console.error('Erreur upload:', data.message);
-          toast.error('Erreur lors de l\'upload', {
-            description: `Impossible d'uploader ${selectedFile.name}`
+          await fetchArtworks();
+          setView('list');
+          toast.success('Artwork mise à jour', {
+            description: 'L\'œuvre a été modifiée avec succès'
           });
-          return;
+        } else {
+          toast.error('Erreur', { description: data.message });
+        }
+      } else {
+        const response = await fetch('/api/artworks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(artworkData),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          await fetchArtworks();
+          setView('list');
+          toast.success('Artwork créée', {
+            description: 'La nouvelle œuvre a été ajoutée avec succès'
+          });
+        } else {
+          toast.error('Erreur', { description: data.message });
         }
       }
-
-      // Determine status based on exhibition assignment
-      let status: 'on-display' | 'in-storage' | 'on-loan' | 'conservation' = 'in-storage';
-      if (formData.exhibition !== 'Non Assigné') {
-        status = 'on-display';
-      }
-
-      // Préparer les données avec l'image uploadée
-      const artworkData = {
-        ...formData,
-        image: imageUrl,
-        status
-      };
-
-      if (selectedArtwork) {
-        // Edit existing artwork
-        setArtworks(artworks.map(artwork =>
-          artwork.id === selectedArtwork.id
-            ? { ...artwork, ...artworkData }
-            : artwork
-        ));
-        toast.success('Œuvre d\'art modifiée avec succès');
-      } else {
-        // Create new artwork
-        const newArtwork: Artwork = {
-          id: Date.now().toString(),
-          ...artworkData
-        };
-        setArtworks([...artworks, newArtwork]);
-        toast.success('Œuvre d\'art créée avec succès');
-      }
-      setView('list');
-      setSelectedFile(null); // Reset du fichier sélectionné
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      console.error('Erreur save:', error);
       toast.error('Erreur', {
         description: 'Une erreur est survenue lors de la sauvegarde'
       });
@@ -212,10 +348,20 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
     if (!artworkToDelete) return;
 
     try {
-      setArtworks(artworks.filter(artwork => artwork.id !== artworkToDelete));
-      toast.success('Œuvre d\'art supprimée', {
-        description: 'L\'œuvre d\'art a été supprimée définitivement'
+      const response = await fetch(`/api/artworks/${artworkToDelete}`, {
+        method: 'DELETE',
+        credentials: 'include',
       });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchArtworks();
+        toast.success('Artwork supprimée', {
+          description: 'L\'œuvre a été supprimée définitivement'
+        });
+      } else {
+        toast.error('Erreur', { description: data.message });
+      }
     } catch (error) {
       console.error('Erreur delete:', error);
       toast.error('Erreur', {
@@ -226,144 +372,40 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'on-display': return 'bg-green-100 text-green-800';
-      case 'in-storage': return 'bg-gray-100 text-gray-800';
-      case 'on-loan': return 'bg-blue-100 text-blue-800';
-      case 'conservation': return 'bg-orange-100 text-orange-800';
-      default: return '';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'on-display': return 'Exposée';
-      case 'in-storage': return 'En Réserve';
-      case 'on-loan': return 'En Prêt';
-      case 'conservation': return 'Conservation';
-      default: return status;
-    }
-  };
-
+  // === RENDER LIST VIEW ===
   const renderListView = () => (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Œuvres d'Art</h1>
-          <p className="text-muted-foreground mt-1">Gérez la collection d'œuvres d'art du musée</p>
+          <h1 className="text-3xl font-bold text-foreground">Artworks Collection</h1>
+          <p className="text-muted-foreground mt-1">Gérez les œuvres d'art du musée</p>
         </div>
         <Button 
           onClick={handleCreateArtwork} 
           className="bg-primary hover:bg-primary-hover shadow-primary smooth-transition"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Ajouter une Œuvre
+          Ajouter une Artwork
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <Eye className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Exposées</p>
-                <p className="text-xl font-semibold">{artworks.filter(a => a.status === 'on-display').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                <LayoutGrid className="w-5 h-5 text-gray-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">En Réserve</p>
-                <p className="text-xl font-semibold">{artworks.filter(a => a.status === 'in-storage').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <ArrowLeft className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">En Prêt</p>
-                <p className="text-xl font-semibold">{artworks.filter(a => a.status === 'on-loan').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Palette className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Conservation</p>
-                <p className="text-xl font-semibold">{artworks.filter(a => a.status === 'conservation').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
+      {/* Search */}
       <Card className="border-0 shadow-lg">
         <CardContent className="p-6">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Rechercher des œuvres d'art..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-52">
-                <SelectValue placeholder="Filtrer par statut" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="on-display">Exposées</SelectItem>
-                <SelectItem value="in-storage">En Réserve</SelectItem>
-                <SelectItem value="on-loan">En Prêt</SelectItem>
-                <SelectItem value="conservation">Conservation</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterExhibition} onValueChange={setFilterExhibition}>
-              <SelectTrigger className="w-52">
-                <SelectValue placeholder="Filtrer par exposition" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les expositions</SelectItem>
-                {exhibitions.map(exhibition => (
-                  <SelectItem key={exhibition} value={exhibition}>
-                    {exhibition}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Rechercher une œuvre..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Artworks Grid - Mode Cards */}
+      {/* Artworks Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -372,14 +414,14 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
         <Card className="border-0 shadow-lg">
           <CardContent className="text-center py-12">
             <Palette className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">Aucune œuvre d'art trouvée</p>
+            <p className="text-muted-foreground">Aucune artwork trouvée</p>
             <Button 
               onClick={handleCreateArtwork}
               variant="outline"
               className="mt-4"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Ajouter votre première œuvre
+              Créer votre première artwork
             </Button>
           </CardContent>
         </Card>
@@ -387,84 +429,55 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredArtworks.map((artwork, index) => (
             <Card 
-              key={artwork.id} 
+              key={artwork._id} 
               className="border-0 shadow-lg card-hover overflow-hidden group animate-scale-in"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               {/* Image principale */}
               <div className="relative h-64 bg-muted overflow-hidden">
-                {artwork.image ? (
-                  <ImageWithFallback
-                    src={artwork.image}
-                    alt={artwork.name}
-                    className="w-full h-full object-cover group-hover:scale-105 smooth-transition"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Palette className="w-12 h-12 text-muted-foreground" />
-                  </div>
-                )}
+                <ImageWithFallback
+                  src={artwork.image}
+                  alt={artwork.title}
+                  className="w-full h-full object-cover group-hover:scale-105 smooth-transition"
+                />
                 
-                {/* Statut badge */}
-                <div className="absolute top-3 right-3">
-                  <Badge className={getStatusColor(artwork.status)}>
-                    {getStatusLabel(artwork.status)}
-                  </Badge>
+                {/* Badges */}
+                <div className="absolute top-3 right-3 flex gap-2">
+                  {(artwork.audioUrls.en || artwork.audioUrls.fr || artwork.audioUrls.wo) && (
+                    <Badge className="bg-success/90 text-white border-0 backdrop-blur-sm">
+                      <Music className="w-3 h-3 mr-1" />
+                      Audio
+                    </Badge>
+                  )}
+                  {artwork.gallery.length > 0 && (
+                    <Badge className="bg-primary/90 text-white border-0 backdrop-blur-sm">
+                      {artwork.gallery.length} photos
+                    </Badge>
+                  )}
                 </div>
-
-                {/* Save button */}
-                <button className="absolute top-3 left-3 p-2 rounded-lg bg-white/90 backdrop-blur-sm hover:bg-white smooth-transition opacity-0 group-hover:opacity-100">
-                  <Bookmark className="w-4 h-4 text-foreground" />
-                </button>
               </div>
 
               <CardContent className="p-5">
-                {/* En-tête avec exposition et année */}
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant="secondary" className="bg-primary/10 text-primary border-0">
-                    {artwork.exhibition}
-                  </Badge>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="w-3 h-3" />
-                    {artwork.year}
-                  </div>
-                </div>
+                {/* Slug */}
+                <Badge variant="secondary" className="mb-3 text-xs font-mono">
+                  {artwork.slug}
+                </Badge>
 
-                {/* Titre et artiste */}
-                <h3 className="font-semibold text-foreground mb-1 line-clamp-1 group-hover:text-primary smooth-transition">
-                  {artwork.name}
+                {/* Titre */}
+                <h3 className="font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary smooth-transition">
+                  {artwork.title}
                 </h3>
                 
-                <p className="text-sm text-muted-foreground mb-3">
-                  {artwork.artist}
-                </p>
-
-                {/* Détails techniques */}
-                <div className="space-y-1 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center gap-2">
-                    <Palette className="w-3 h-3" />
-                    <span className="truncate">{artwork.medium}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <LayoutGrid className="w-3 h-3" />
-                    <span className="truncate">{artwork.dimensions}</span>
-                  </div>
-                </div>
-
-                {/* Description */}
+                {/* Description preview */}
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                  {artwork.description}
+                  {artwork.description[0]?.content}
                 </p>
 
                 {/* Footer avec actions */}
                 <div className="flex items-center justify-between pt-4 border-t border-border">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-semibold">
-                      {artwork.artist.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{artwork.artist}</p>
-                    </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <FileText className="w-3 h-3" />
+                    {artwork.description.length} bloc{artwork.description.length > 1 ? 's' : ''}
                   </div>
 
                   <div className="flex items-center gap-1">
@@ -479,7 +492,7 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setArtworkToDelete(artwork.id)}
+                      onClick={() => artwork._id && setArtworkToDelete(artwork._id)}
                       className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -494,6 +507,7 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
     </div>
   );
 
+  // === RENDER CREATE/EDIT VIEW ===
   const renderCreateEditView = () => (
     <div className="space-y-6 animate-slide-in">
       {/* Header */}
@@ -503,126 +517,195 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
           Retour
         </Button>
         <h1 className="text-3xl font-bold">
-          {selectedArtwork ? 'Modifier l\'Œuvre' : 'Nouvelle Œuvre d\'Art'}
+          {selectedArtwork ? 'Modifier l\'Artwork' : 'Nouvelle Artwork'}
         </h1>
       </div>
 
       {/* Form */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {/* Basic Info */}
+          {/* Titre */}
           <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Détails de l'Œuvre</CardTitle>
+              <CardTitle>Informations Principales</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="name">Nom de l'Œuvre</Label>
+                <Label htmlFor="title">Titre de l'œuvre *</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Nom de l'œuvre d'art..."
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  placeholder="Ex: La Joconde"
                   className="mt-2"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="artist">Artiste</Label>
-                  <Input
-                    id="artist"
-                    value={formData.artist}
-                    onChange={(e) => setFormData({...formData, artist: e.target.value})}
-                    placeholder="Nom de l'artiste..."
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="year">Année</Label>
-                  <Input
-                    id="year"
-                    value={formData.year}
-                    onChange={(e) => setFormData({...formData, year: e.target.value})}
-                    placeholder="Année de création..."
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="medium">Technique</Label>
-                  <Input
-                    id="medium"
-                    value={formData.medium}
-                    onChange={(e) => setFormData({...formData, medium: e.target.value})}
-                    placeholder="ex: Huile sur toile"
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="dimensions">Dimensions</Label>
-                  <Input
-                    id="dimensions"
-                    value={formData.dimensions}
-                    onChange={(e) => setFormData({...formData, dimensions: e.target.value})}
-                    placeholder="ex: 120 x 90 cm"
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="acquisitionDate">Date d'Acquisition</Label>
-                <Input
-                  id="acquisitionDate"
-                  type="date"
-                  value={formData.acquisitionDate}
-                  onChange={(e) => setFormData({...formData, acquisitionDate: e.target.value})}
-                  className="mt-2"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Décrivez l'œuvre d'art..."
-                  className="min-h-[120px] mt-2"
-                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Le slug sera généré automatiquement à partir du titre
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Image Upload */}
+          {/* Description Blocks */}
           <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Image de l'Œuvre</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Description *</CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addDescriptionBlock('heading')}
+                  >
+                    <Heading1 className="w-4 h-4 mr-2" />
+                    Titre
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addDescriptionBlock('paragraph')}
+                  >
+                    <AlignLeft className="w-4 h-4 mr-2" />
+                    Paragraphe
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {formData.description.map((block, index) => (
+                <div key={index} className="border border-border rounded-lg p-4 space-y-2 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <Badge variant={block.type === 'heading' ? 'default' : 'secondary'}>
+                      {block.type === 'heading' ? (
+                        <>
+                          <Heading1 className="w-3 h-3 mr-1" />
+                          Titre
+                        </>
+                      ) : (
+                        <>
+                          <AlignLeft className="w-3 h-3 mr-1" />
+                          Paragraphe
+                        </>
+                      )}
+                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => moveDescriptionBlock(index, 'up')}
+                        disabled={index === 0}
+                        className="h-7 w-7 p-0"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => moveDescriptionBlock(index, 'down')}
+                        disabled={index === formData.description.length - 1}
+                        className="h-7 w-7 p-0"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeDescriptionBlock(index)}
+                        className="h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  {block.type === 'heading' ? (
+                    <Input
+                      value={block.content}
+                      onChange={(e) => updateDescriptionBlock(index, e.target.value)}
+                      placeholder="Entrez un titre..."
+                      className="font-semibold"
+                    />
+                  ) : (
+                    <Textarea
+                      value={block.content}
+                      onChange={(e) => updateDescriptionBlock(index, e.target.value)}
+                      placeholder="Entrez un paragraphe..."
+                      className="min-h-[100px]"
+                    />
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Image Principale */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle>Image Principale *</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {/* Zone d'upload */}
-                {!selectedFile && (
+                {formData.image && !mainImageFile && (
+                  <div className="relative group">
+                    <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                      <ImageWithFallback
+                        src={formData.image}
+                        alt="Image principale"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setFormData({...formData, image: ''})}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 smooth-transition"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Supprimer
+                    </Button>
+                  </div>
+                )}
+
+                {mainImageFile && (
+                  <div className="border-2 border-primary/30 border-dashed rounded-lg p-4 bg-primary/5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <ImageIcon className="w-8 h-8 text-primary" />
+                        <div>
+                          <p className="font-medium">{mainImageFile.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(mainImageFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setMainImageFile(null)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {!formData.image && !mainImageFile && (
                   <div className="border-2 border-dashed border-border rounded-xl p-8 text-center bg-muted/30 hover:bg-muted/50 smooth-transition">
                     <Upload className="w-8 h-8 mx-auto mb-4 text-muted-foreground" />
                     <p className="text-muted-foreground mb-3">
-                      Ajoutez une image de l'œuvre d'art
+                      Ajoutez l'image principale de l'œuvre
                     </p>
                     <input
                       type="file"
-                      id="artwork-upload"
+                      id="main-image-upload"
                       accept="image/*"
-                      onChange={handleFileSelect}
+                      onChange={handleMainImageSelect}
                       className="hidden"
                     />
-                    <label htmlFor="artwork-upload">
+                    <label htmlFor="main-image-upload">
                       <Button 
                         variant="outline" 
                         type="button"
-                        onClick={() => document.getElementById('artwork-upload')?.click()}
+                        onClick={() => document.getElementById('main-image-upload')?.click()}
                       >
                         <Upload className="w-4 h-4 mr-2" />
                         Choisir une image
@@ -630,56 +713,81 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
                     </label>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
 
-                {/* Aperçu du fichier sélectionné */}
-                {selectedFile && (
-                  <div className="relative group animate-scale-in">
-                    <div className="w-full h-64 rounded-lg overflow-hidden bg-muted border-2 border-dashed border-primary/30">
-                      <div className="w-full h-full flex items-center justify-center">
-                        <div className="text-center">
-                          <Upload className="w-8 h-8 mx-auto mb-4 text-primary" />
-                          <p className="text-muted-foreground px-4">
-                            {selectedFile.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Sera uploadé lors de la sauvegarde
-                          </p>
+          {/* Galerie */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle>Galerie d'Images</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Images existantes */}
+                {formData.gallery.length > 0 && (
+                  <div className="grid grid-cols-3 gap-4">
+                    {formData.gallery.map((img, index) => (
+                      <div key={index} className="relative group">
+                        <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                          <ImageWithFallback
+                            src={img.url}
+                            alt={img.alt}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
+                        <button
+                          onClick={() => removeExistingGalleryImage(index)}
+                          className="absolute top-2 right-2 p-1.5 bg-destructive text-white rounded-lg opacity-0 group-hover:opacity-100 smooth-transition"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
-                    </div>
-                    <button
-                      onClick={handleRemoveSelectedFile}
-                      className="absolute top-2 right-2 p-1.5 bg-destructive text-white rounded-lg opacity-0 group-hover:opacity-100 smooth-transition hover:bg-destructive/90 shadow-lg"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-primary/60 text-white text-xs rounded-md backdrop-blur-sm">
-                      Nouvelle image
-                    </div>
+                    ))}
                   </div>
                 )}
 
-                {/* Aperçu de l'image existante */}
-                {formData.image && !selectedFile && (
-                  <div className="relative group animate-scale-in">
-                    <div className="w-full h-64 rounded-lg overflow-hidden bg-muted">
-                      <ImageWithFallback
-                        src={formData.image}
-                        alt="Aperçu de l'œuvre"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <button
-                      onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
-                      className="absolute top-2 right-2 p-1.5 bg-destructive text-white rounded-lg opacity-0 group-hover:opacity-100 smooth-transition hover:bg-destructive/90 shadow-lg"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 text-white text-xs rounded-md backdrop-blur-sm">
-                      Image actuelle
-                    </div>
+                {/* Nouveaux fichiers */}
+                {galleryFiles.length > 0 && (
+                  <div className="grid grid-cols-3 gap-4">
+                    {galleryFiles.map((file, index) => (
+                      <div key={index} className="relative group border-2 border-dashed border-primary/30 rounded-lg p-2 bg-primary/5">
+                        <div className="text-center">
+                          <ImageIcon className="w-6 h-6 mx-auto mb-2 text-primary" />
+                          <p className="text-xs truncate">{file.name}</p>
+                        </div>
+                        <button
+                          onClick={() => removeGalleryFile(index)}
+                          className="absolute top-1 right-1 p-1 bg-destructive text-white rounded opacity-0 group-hover:opacity-100 smooth-transition"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
+
+                {/* Zone d'upload */}
+                <div className="border-2 border-dashed border-border rounded-xl p-6 text-center bg-muted/30">
+                  <input
+                    type="file"
+                    id="gallery-upload"
+                    accept="image/*"
+                    multiple
+                    onChange={handleGalleryFilesSelect}
+                    className="hidden"
+                  />
+                  <label htmlFor="gallery-upload">
+                    <Button 
+                      variant="outline" 
+                      type="button"
+                      onClick={() => document.getElementById('gallery-upload')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Ajouter des images
+                    </Button>
+                  </label>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -687,32 +795,169 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Exhibition Assignment */}
+          {/* Fichiers Audio */}
           <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Assignation d'Exposition</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Languages className="w-5 h-5" />
+                Audio Guides
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {/* Anglais */}
               <div>
-                <Label htmlFor="exhibition">Assigner à une Exposition</Label>
-                <Select 
-                  value={formData.exhibition} 
-                  onValueChange={(value) => setFormData({...formData, exhibition: value})}
-                >
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {exhibitions.map(exhibition => (
-                      <SelectItem key={exhibition} value={exhibition}>
-                        {exhibition}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Les œuvres assignées à des expositions seront marquées comme "Exposées"
-                </p>
+                <Label htmlFor="audio-en" className="flex items-center gap-2 mb-2">
+                  🇬🇧 Anglais
+                </Label>
+                {formData.audioUrls.en && !audioFiles.en ? (
+                  <div className="flex items-center justify-between p-2 bg-success/10 rounded">
+                    <Music className="w-4 h-4 text-success" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFormData({
+                        ...formData,
+                        audioUrls: { ...formData.audioUrls, en: '' }
+                      })}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : audioFiles.en ? (
+                  <div className="flex items-center justify-between p-2 bg-primary/10 rounded">
+                    <p className="text-xs truncate">{audioFiles.en.name}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAudioFiles({ ...audioFiles, en: null })}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="file"
+                      id="audio-en"
+                      accept="audio/*"
+                      onChange={(e) => handleAudioFileSelect('en', e)}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => document.getElementById('audio-en')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Choisir
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Français */}
+              <div>
+                <Label htmlFor="audio-fr" className="flex items-center gap-2 mb-2">
+                  🇫🇷 Français
+                </Label>
+                {formData.audioUrls.fr && !audioFiles.fr ? (
+                  <div className="flex items-center justify-between p-2 bg-success/10 rounded">
+                    <Music className="w-4 h-4 text-success" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFormData({
+                        ...formData,
+                        audioUrls: { ...formData.audioUrls, fr: '' }
+                      })}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : audioFiles.fr ? (
+                  <div className="flex items-center justify-between p-2 bg-primary/10 rounded">
+                    <p className="text-xs truncate">{audioFiles.fr.name}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAudioFiles({ ...audioFiles, fr: null })}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="file"
+                      id="audio-fr"
+                      accept="audio/*"
+                      onChange={(e) => handleAudioFileSelect('fr', e)}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => document.getElementById('audio-fr')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Choisir
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Wolof */}
+              <div>
+                <Label htmlFor="audio-wo" className="flex items-center gap-2 mb-2">
+                  🇸🇳 Wolof
+                </Label>
+                {formData.audioUrls.wo && !audioFiles.wo ? (
+                  <div className="flex items-center justify-between p-2 bg-success/10 rounded">
+                    <Music className="w-4 h-4 text-success" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFormData({
+                        ...formData,
+                        audioUrls: { ...formData.audioUrls, wo: '' }
+                      })}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : audioFiles.wo ? (
+                  <div className="flex items-center justify-between p-2 bg-primary/10 rounded">
+                    <p className="text-xs truncate">{audioFiles.wo.name}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAudioFiles({ ...audioFiles, wo: null })}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="file"
+                      id="audio-wo"
+                      accept="audio/*"
+                      onChange={(e) => handleAudioFileSelect('wo', e)}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => document.getElementById('audio-wo')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Choisir
+                    </Button>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -724,17 +969,17 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
                 <Button 
                   onClick={handleSaveArtwork} 
                   className="w-full bg-primary hover:bg-primary-hover shadow-primary"
-                  disabled={!formData.name || !formData.artist || uploading}
+                  disabled={uploading}
                 >
                   {uploading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {selectedFile ? 'Upload et sauvegarde...' : 'Sauvegarde...'}
+                      Sauvegarde en cours...
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4 mr-2" />
-                      Sauvegarder l'Œuvre
+                      Sauvegarder
                     </>
                   )}
                 </Button>
@@ -742,89 +987,13 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
                   variant="outline" 
                   onClick={() => setView('list')} 
                   className="w-full"
+                  disabled={uploading}
                 >
                   Annuler
                 </Button>
               </div>
             </CardContent>
           </Card>
-
-          {/* Preview */}
-          {(formData.name || formData.artist || formData.image || selectedFile) && (
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Aperçu de l'Œuvre</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Image de prévisualisation */}
-                {(formData.image || selectedFile) && (
-                  <div className="w-full h-32 rounded-lg overflow-hidden bg-muted">
-                    {selectedFile ? (
-                      <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                        <div className="text-center">
-                          <Upload className="w-6 h-6 mx-auto mb-2 text-primary" />
-                          <p className="text-xs text-muted-foreground">
-                            {selectedFile.name}
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <ImageWithFallback
-                        src={formData.image}
-                        alt="Aperçu de l'œuvre"
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                )}
-
-                {/* Informations de l'œuvre */}
-                <div className="space-y-2">
-                  {formData.name && (
-                    <h3 className="font-semibold text-lg">{formData.name}</h3>
-                  )}
-                  {formData.artist && (
-                    <p className="text-muted-foreground font-medium">{formData.artist}</p>
-                  )}
-                  
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    {formData.year && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{formData.year}</span>
-                      </div>
-                    )}
-                    {formData.medium && (
-                      <div className="flex items-center gap-1">
-                        <Palette className="w-3 h-3" />
-                        <span>{formData.medium}</span>
-                      </div>
-                    )}
-                    {formData.dimensions && (
-                      <div className="flex items-center gap-1">
-                        <LayoutGrid className="w-3 h-3" />
-                        <span>{formData.dimensions}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {formData.exhibition && formData.exhibition !== 'Non Assigné' && (
-                    <div className="mt-2">
-                      <Badge variant="secondary" className="bg-primary/10 text-primary">
-                        {formData.exhibition}
-                      </Badge>
-                    </div>
-                  )}
-
-                  {formData.description && (
-                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                      {formData.description}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>
@@ -838,7 +1007,7 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
         <header className="bg-card border-b border-border sticky top-0 z-10 backdrop-blur-xl bg-card/80">
           <div className="px-8 py-6">
             <h2 className="text-lg font-semibold text-foreground">
-              Gestion des Œuvres d'Art
+              Gestion des Artworks
             </h2>
           </div>
         </header>
@@ -849,17 +1018,17 @@ export function ArtworksPage({ onNavigate, onLogout }: ArtworksPageProps) {
       </div>
 
       {/* Modal de confirmation de suppression */}
-      <AlertDialog open={!!artworkToDelete} onOpenChange={(open) => !open && setArtworkToDelete(null)}>
+      <AlertDialog open={!!artworkToDelete} onOpenChange={(open: boolean) => !open && setArtworkToDelete(null)}>
         <AlertDialogContent className="border-0 shadow-xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-destructive/10">
                 <AlertTriangle className="w-5 h-5 text-destructive" />
               </div>
-              Supprimer cette œuvre ?
+              Supprimer cette artwork ?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-base">
-              Cette action est irréversible. L'œuvre d'art sera définitivement supprimée de la collection.
+              Cette action est irréversible. L'œuvre sera définitivement supprimée de la base de données.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

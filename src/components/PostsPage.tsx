@@ -619,7 +619,7 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
                 <Label htmlFor="category">Catégorie</Label>
                 <Select 
                   value={formData.category} 
-                  onValueChange={(value) => setFormData({...formData, category: value})}
+                  onValueChange={(value: string) => setFormData({...formData, category: value})}
                 >
                   <SelectTrigger className="mt-2">
                     <SelectValue />
@@ -639,7 +639,7 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
                 <Switch
                   id="status"
                   checked={formData.status === 'published'}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked: boolean) => 
                     setFormData({...formData, status: checked ? 'published' : 'draft'})
                   }
                 />
@@ -702,7 +702,7 @@ export function PostsPage({ onNavigate, onLogout }: PostsPageProps) {
       </div>
 
       {/* Modal de confirmation de suppression */}
-      <AlertDialog open={!!postToDelete} onOpenChange={(open) => !open && setPostToDelete(null)}>
+      <AlertDialog open={!!postToDelete} onOpenChange={(open: boolean) => !open && setPostToDelete(null)}>
         <AlertDialogContent className="border-0 shadow-xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
