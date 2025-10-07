@@ -50,11 +50,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier la taille du fichier (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Vérifier la taille du fichier (max 15MB)
+    const maxSize = 15 * 1024 * 1024; // 15MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { success: false, message: 'Fichier trop volumineux. Taille max: 5MB' },
+        { success: false, message: 'Fichier trop volumineux. Taille max: 15MB' },
         { status: 400 }
       );
     }
